@@ -46,12 +46,14 @@ def validate_messages(messages, *, max_total_chars=600):
     return len(conversation) > 1 or bool(systems)
 
 
-def as_prompt(messages, *, language="auto"):
+def as_prompt(messages, *, language="auto", style="legacy"):
     """Pack history into *text*, not model-native role embeddings.
 
     Local toy checkpoints have NOT been trained to obey system/assistant
     structured roles reliably; this is useful context formatting only.
     """
+    if style not in ("legacy", "staged"):
+        raise ValueError("Unsupported prompt style")
     has_context = validate_messages(messages)
     if not has_context:
         return messages[-1].content, False
@@ -62,7 +64,11 @@ def as_prompt(messages, *, language="auto"):
         raise ValueError("language must be auto, zh or en")
     # Reuse the training corpus' question/answer delimiters as much as
     # possible. The model still has no trained instruction-role awareness.
-    q, a = ("问：", "答：") if language == "zh" else ("Q: ", "A: ")
+    if style == "staged":
+        # Exact delimiters used by train_bilingual_stages instruction_example.
+        q, a = "用户：", "助手："
+    else:
+        q, a = ("问：", "答：") if language == "zh" else ("Q: ", "A: ")
     turns = []
     for msg in messages:
         if msg.role == "system":
@@ -96,7 +102,7 @@ def from_staged_checkpoint(checkpoint_path):
     model = SRTM15LanguageModel(config)
     model.load_state_dict(state["model"], strict=True)
     model.eval()
-    return LocalDecoder(model, vocab, "character", "", "SRT-M15 staged (local)")
+    return LocalDecoder(model, vocab, "character", "staged_user_assistant", "SRT-M15 staged (local)")
 
 
 def prepare_local(decoder, prompt, *, language="auto", has_context=False):
@@ -119,6 +125,8 @@ def prepare_local(decoder, prompt, *, language="auto", has_context=False):
         raise ValueError("Unsupported tokenizer")
     if has_context:
         prefix = prompt
+    elif decoder.qa_training == "staged_user_assistant":
+        prefix = "用户：" + prompt + "\n助手："
     elif decoder.qa_training.startswith("masked_answer"):
         prefix = "问：" + prompt + "\n答："
     else:
