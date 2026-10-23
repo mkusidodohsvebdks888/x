@@ -206,10 +206,15 @@ $('disclaimer').textContent='\u6ce8\u610f\uff1a\u8fd9\u662f\u7814\u7a76\u539f\u5
 $('status').textContent='\u6b63\u5728\u68c0\u67e5\u6a21\u578b';
 function bubble(role, value){const n=document.createElement('div');n.className='message '+role;n.textContent=value;$('chat').appendChild(n);n.scrollIntoView({behavior:'smooth',block:'end'});}
 let working=false;
+const chatHistory=[];
 async function submit(){const question=$('message').value.trim();if(!question||working)return;
  $('message').value='';bubble('user',question);working=true;$('send').disabled=true;
- try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:question,language:$('chat-language').value})});
- const data=await r.json();if(!r.ok)throw new Error(data.error||('HTTP '+r.status));bubble('bot',data.text||'');}
+ try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:question,language:$('chat-language').value,history:chatHistory})});
+ const data=await r.json();if(!r.ok)throw new Error(data.error||('HTTP '+r.status));
+ const answer=data.text||'';
+ bubble('bot',(data.provider?'【'+data.provider+'】\n':'')+answer);
+ if(answer){chatHistory.push({role:'user',content:question},{role:'assistant',content:answer});if(chatHistory.length>16)chatHistory.splice(0,chatHistory.length-16);}
+ }
  catch(e){bubble('bot','\u6267\u884c\u9519\u8bef\uff1a'+e.message);}
  finally{working=false;$('send').disabled=false;$('message').focus();refreshStatus();}}
 $('send').addEventListener('click',submit);
@@ -368,7 +373,12 @@ async function refreshStatus(){
  try{
  const r=await fetch('/api/status');if(!r.ok)throw new Error('HTTP '+r.status);
  const d=await r.json();
- $('status').textContent=d.math_checkpoint&&d.language_checkpoint?'模型已就绪':'部分权重缺失';
+ $('status').textContent=d.chat_backend==='ollama'?'本地对话：'+d.ollama_model:(d.math_checkpoint&&d.language_checkpoint?'模型已就绪':'部分权重缺失');
+ if(d.chat_backend==='ollama'){
+  $('sub').textContent='SRT-M15 对话界面 · Ollama 本地 Qwen 推理（非 SRT-M15 原生权重）';
+  $('intro').textContent='你好！当前启用独立的本地 Qwen 指令模型进行中英文多轮对话。SRT-M15 自研模型及训练面板仍保留为实验功能。';
+  $('disclaimer').textContent='对话来源：本机 Ollama / '+d.ollama_model+'。此模式不会更新 SRT-M15 自研权重。';
+ }
  const l=d.learning||{};
  if(!switching)$('learning-toggle').checked=!!l.enabled;
  renderPractice(d.practice||{});
@@ -552,7 +562,8 @@ def prepare_model_root():
     return model_root
 
 
-def run_server(model_root, port, open_browser):
+def run_server(model_root, port, open_browser, *, chat_backend="srt-m15",
+               ollama_model="qwen3:4b-instruct"):
     sys.path.insert(0, str(model_root))
     from srt_m15.chat import SRTChatEngine
     from srt_m15.autolearn import AutoLearningController
@@ -560,6 +571,12 @@ def run_server(model_root, port, open_browser):
     from srt_m15.web_learning import WebLearningController
     from srt_m15.supervised_language import ReviewedQAStore, LanguageLearningController
     engine = SRTChatEngine(model_root)
+    if chat_backend not in ("srt-m15", "ollama"):
+        raise ValueError("invalid chat backend")
+    ollama = None
+    if chat_backend == "ollama":
+        from srt_m15.ollama_local import OllamaLocalClient
+        ollama = OllamaLocalClient(model=ollama_model)
     guard = threading.RLock()
     learning = AutoLearningController(engine, guard)
     practice = AutonomousPracticeRunner(engine, guard, learning)
@@ -592,7 +609,9 @@ def run_server(model_root, port, open_browser):
                 self.end_headers()
                 self.wfile.write(content)
             elif self.path == "/api/status":
-                self._send(200, {**engine.status(), "learning": learning.status(),
+                self._send(200, {**engine.status(), "chat_backend": chat_backend,
+                                 "ollama_model": (ollama_model if ollama is not None else None),
+                                 "learning": learning.status(),
                                  "practice": practice.status(), "web": web.status(),
                                  "qa": qa.status()})
             else:
@@ -628,6 +647,42 @@ def run_server(model_root, port, open_browser):
                     lang = body.get("language", "auto")
                     if lang not in ("auto", "zh", "en"):
                         raise ValueError("chat language must be auto, zh or en")
+                    if ollama is not None:
+                        history = body.get("history", [])
+                        if not isinstance(history, list) or len(history) > 16 or len(history) % 2:
+                            raise ValueError("history must be an even list of up to 16 messages")
+                        for idx, item in enumerate(history):
+                            required_role = "user" if idx % 2 == 0 else "assistant"
+                            if (not isinstance(item, dict) or item.get("role") != required_role
+                                    or not isinstance(item.get("content"), str)
+                                    or not 1 <= len(item["content"].strip()) <= 4000):
+                                raise ValueError("invalid conversation history")
+                        language_hint = ("Please reply in English." if lang == "en" else
+                                         "请用简体中文回答。" if lang == "zh" else
+                                         "请使用与用户输入一致的语言回答，优先中文或英文。")
+                        system_message = (
+                            "You are a local instruction-tuned Qwen model accessed through "
+                            "the SRT-M15 application interface. Do not claim your model weights "
+                            "are SRT-M15's own trained weights. Be helpful and accurate. "
+                            + language_hint
+                        )
+                        try:
+                            with guard:
+                                answer = ollama.chat(
+                                    [{"role": "system", "content": system_message}]
+                                    + history + [{"role": "user", "content": question}],
+                                    max_tokens=256,
+                                )
+                        except Exception as exc:
+                            from srt_m15.ollama_local import OllamaLocalError
+                            if not isinstance(exc, OllamaLocalError):
+                                raise
+                            return self._send(503, {"error": str(exc)})
+                        return self._send(200, {
+                            "mode": "local_external_weights", "text": answer,
+                            "provider": "Ollama 本地 / " + ollama_model,
+                            "learning_event": "not_trainable"
+                        })
                     trimmed = question.strip()
                     lookup = re.match(r"^(?:联网搜索|联网查询)\s*[:：]\s*(.+)$", trimmed, re.S)
                     if lookup:
@@ -724,13 +779,18 @@ def main():
     p = argparse.ArgumentParser(description="SRT-M15 local learning and opt-in Wikipedia retrieval")
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--no-browser", action="store_true")
+    p.add_argument("--chat-backend", choices=("srt-m15", "ollama"), default="srt-m15",
+                   help="ollama enables locally downloaded pretrained conversation weights")
+    p.add_argument("--ollama-model", default="qwen3:4b-instruct",
+                   help="An installed local Ollama model; no model is downloaded implicitly")
     args = p.parse_args()
     try:
         model_root = prepare_model_root()
     except Exception as exc:
         print("Could not prepare model:", exc, file=sys.stderr)
         raise SystemExit(2)
-    run_server(model_root, args.port, not args.no_browser)
+    run_server(model_root, args.port, not args.no_browser,
+               chat_backend=args.chat_backend, ollama_model=args.ollama_model)
 
 
 if __name__ == "__main__":
