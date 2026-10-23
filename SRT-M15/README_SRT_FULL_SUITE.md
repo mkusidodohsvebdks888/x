@@ -30,7 +30,15 @@ SRT-M15/
 
 ## 0. Windows 首次安装
 
-在电脑安装 Git、Python 3.11、Ollama，并从仓库更新：
+在电脑安装 Git、Python 3.11、Ollama，并从仓库更新。已准备好 Python 和 Ollama 的用户也可以直接运行 **`SRT_M15_SETUP_WINDOWS.ps1`**，它会创建虚拟环境、安装依赖和官方 CUDA 12.8 版 PyTorch，并在未跳过时拉取本地 Qwen 模型；先检查脚本内容再执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\SRT_M15_SETUP_WINDOWS.ps1
+```
+
+若 NVIDIA 驱动不兼容 CUDA 12.8，需要先更新驱动或改用官方匹配版本。脚本只准备本地环境，**不会自动采集教师回答或训练权重**。
+
+手动安装的命令如下：
 
 ```powershell
 git clone https://github.com/mkusidodohsvebdks888/x.git
