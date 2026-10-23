@@ -158,7 +158,7 @@ def run(args):
                "--stages", args.stages, "--context", args.context,
                "--batch-size", args.batch_size, "--dim", args.dim,
                "--heads", 4, "--experts", 2, "--reasoning-steps", 1,
-               "--max-eval-pairs", 16, "--sampling", "cycle", "--output", args.output]
+               "--max-eval-pairs", 0, "--sampling", "cycle", "--output", args.output]
         checkpoint = project_path(args.output) / "latest.pt"
         if not args.resume and checkpoint.exists():
             raise ValueError("Checkpoint already exists. Use --resume or another --output directory.")
