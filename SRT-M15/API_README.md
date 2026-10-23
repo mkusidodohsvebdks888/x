@@ -1,5 +1,7 @@
 # SRT-M15 本地 API 服务
 
+> **更新（2026-10-23）：已支持真正增量 SSE 流式输出、多轮无状态 API，以及可选的原生分批训练检查点 `srt-m15-staged`。** 详细见 [API_STREAM_HTTPS_2GB.md](API_STREAM_HTTPS_2GB.md)，包括 2GB RAM + Caddy HTTPS 的部署指南。
+
 本项目在**已训练好的 SRT-M15 模型**外增加 FastAPI HTTP 服务，提供 OpenAI Chat Completions 风格的**基础兼容接口**，不改动 Transformer 网络结构或模型权重。API 服务本身不会让模型变得更聪明。
 
 ## 1. 在电脑部署（直接克隆 GitHub 项目）
@@ -69,7 +71,7 @@ curl http://127.0.0.1:8000/v1/chat/completions -H "Authorization: Bearer your-ow
 }
 ```
 
-**重要限制**：当前只是**非流式、单轮、文本**版本；`stream:true`、多轮历史、system message、工具调用均未实现，不会偷偷忽略历史。对于未支持的参数或模式会给出明确的 4xx 错误，`max_tokens` 最大 80，`temperature` 只能省略或指定 0。某些 OpenAI SDK 可能自动添加未支持参数，接入时需关闭对应功能。
+**当前限制**：现已支持增量 SSE `stream:true`、带历史的 `messages`，但**不持久化服务端会话**，每次请求须自行发送历史。原生模型只是把历史拼为文本，最大上下文和词表可能使请求返回 `422`；`max_tokens` 最大 80，`temperature` 只能省略或指定 0。仍不支持工具调用、完整 OpenAI SDK 参数或可靠的长上下文。部分 SDK 默认添加的字段需关闭。使用 `srt-m15-staged` 需设置 `SRT_STAGED_CHECKPOINT` 指向服务器上可信的训练 `latest.pt` / `best.pt` 文件。
 
 很多支持自定义 OpenAI 接口的软件可以尝试配置：
 
@@ -103,7 +105,7 @@ Notebook 第 6 步会同步写出最新的 `api_server.py` 和测试文件。Col
 
 ## 6. 后续扩展方向
 
-流式输出 SSE、多轮上下文、模型预热、请求队列、速率限制、请求指标、在线版本发布与测试、生产日志审计。这些尚未实现，请不要将当前基础接口描述成完整 OpenAI API 服务。
+SSE 流式和有界多轮消息已实现。仍需进一步完善模型预热、服务端聊天历史存储、独立的请求队列、限速、指标、在线模型版本管理和生产日志审计；现在依然不是完整的 OpenAI API 服务。
 
 ## 浏览器前端跨域（可选）
 
