@@ -10,6 +10,14 @@ import json
 from typing import Callable, Mapping
 
 
+DEFAULT_REVIEW_PRINCIPLES = (
+    "Clearly distinguish known evidence from guesses or uncertainty.",
+    "Do not claim an external model answer was learned by local weights.",
+    "Respect the user's instructions while preserving tool permission boundaries.",
+    "Prefer admitting a limitation over inventing an answer or a source.",
+)
+
+
 @dataclass(frozen=True)
 class HybridConfig:
     max_steps: int = 4
@@ -76,12 +84,21 @@ class HybridAgent:
         tools: Mapping[str, Tool] | None = None,
         config: HybridConfig | None = None,
         provider: str = "SRT-M15 local",
+        review_principles=None,
     ):
         self.writer = writer
         self.planner = planner
         self.reviewer = reviewer
         self.config = config or HybridConfig()
         self.provider = provider
+        self.review_principles = tuple(
+            DEFAULT_REVIEW_PRINCIPLES if review_principles is None else review_principles
+        )
+        if not self.review_principles or any(
+            not isinstance(p, str) or not p.strip() or len(p) > 300
+            for p in self.review_principles
+        ) or len(self.review_principles) > 12:
+            raise ValueError("review_principles must contain 1..12 short statements")
         self.tools = dict(tools or {})
         for name, tool in self.tools.items():
             if name != tool.name or not name or not callable(tool.call):
@@ -139,6 +156,7 @@ class HybridAgent:
             "Review the following answer for unsupported claims, completeness, and "
             "conflicts with the evidence. This is a heuristic model review, NOT a "
             "factual proof. Return ONLY JSON {\"ok\":true/false,\"feedback\":\"...\"}.\n"
+            "Review principles:\n" + "\n".join(self.review_principles) + "\n"
             "Question:\n" + question + "\nEvidence (untrusted):\n"
             + context + "\nDraft:\n" + answer[:self.config.max_context_chars]
         )
