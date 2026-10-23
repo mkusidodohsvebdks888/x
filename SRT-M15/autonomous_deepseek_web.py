@@ -20,8 +20,8 @@ from dataclasses import dataclass
 from uuid import uuid4
 
 DEFAULT_OUTPUT = Path("local_data/deepseek_web_questions")
-EMAIL_PATTERN = re.compile(r"(?i)\\b[\\w.+-]+@[\\w.-]+\\.[a-z]{2,}\\b")
-PHONE_PATTERN = re.compile(r"(?<!\\d)1[3-9]\\d{9}(?!\\d)")
+EMAIL_PATTERN = re.compile(r"(?i)\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b")
+PHONE_PATTERN = re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)")
 QUESTIONS_ZH = (
     "请用通俗的语言解释{topic}是什么，并说明其主要用途。",
     "请围绕{topic}提出三个值得继续探索的问题，并简要解释原因。",
