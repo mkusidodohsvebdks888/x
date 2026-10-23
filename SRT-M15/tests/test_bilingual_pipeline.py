@@ -41,6 +41,35 @@ class BilingualPipelineTests(unittest.TestCase):
         self.assertEqual(language_counts(train), {"zh": 4, "en": 4})
         self.assertEqual(language_counts(dev), {"zh": 1, "en": 1})
 
+    def test_parallel_synthetic_data_never_leaks_topics(self):
+        path = Path(__file__).resolve().parents[1] / "examples/bilingual_synthetic_v1.jsonl"
+        records = load_records(path, allow_demo=True)
+        self.assertEqual(language_counts(records), {"zh": 130, "en": 130})
+        self.assertEqual(len({r.topic_id for r in records}), 130)
+        train, dev = split_records(records, seed=42)
+        self.assertEqual(language_counts(train), {"zh": 104, "en": 104})
+        self.assertEqual(language_counts(dev), {"zh": 26, "en": 26})
+        self.assertFalse({r.topic_id for r in train} & {r.topic_id for r in dev})
+        self.assertFalse({normalize_prompt(r.prompt) for r in train} &
+                         {normalize_prompt(r.prompt) for r in dev})
+        self.assertEqual(
+            [(r.topic_id, r.language) for r in dev],
+            [(r.topic_id, r.language) for r in split_records(records, seed=42)[1]],
+        )
+
+    def test_paired_data_rejects_conflicting_splits(self):
+        rows = [
+            {"language": "zh", "prompt": f"问题{i}", "response": f"回答{i}",
+             "topic_id": f"topic{i}", "split": "train"}
+            for i in range(4)
+        ] + [
+            {"language": "en", "prompt": f"question{i}", "response": f"answer{i}",
+             "topic_id": f"topic{i}", "split": "dev" if i == 0 else "train"}
+            for i in range(4)
+        ]
+        with self.assertRaisesRegex(ValueError, "conflicting"):
+            split_records(load_records(self.make_file(rows), allow_demo=True))
+
     def test_punctuation_normalization_and_duplicates(self):
         self.assertEqual(normalize_prompt("ＨＥＬＬＯ！"), normalize_prompt("hello"))
         rows = [
