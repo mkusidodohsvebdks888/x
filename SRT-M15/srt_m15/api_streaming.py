@@ -60,12 +60,17 @@ def as_prompt(messages, *, language="auto"):
         language = detect_text_language(messages[-1].content)
     if language not in ("zh", "en"):
         raise ValueError("language must be auto, zh or en")
-    labels = (("系统", "用户", "助手") if language == "zh"
-              else ("System", "User", "Assistant"))
-    prefix = {"system": labels[0], "user": labels[1], "assistant": labels[2]}
-    lines = [prefix[m.role] + ": " + m.content for m in messages]
-    lines.append(labels[2] + ":")
-    return "\n".join(lines), True
+    # Reuse the training corpus' question/answer delimiters as much as
+    # possible. The model still has no trained instruction-role awareness.
+    q, a = ("问：", "答：") if language == "zh" else ("Q: ", "A: ")
+    turns = []
+    for msg in messages:
+        if msg.role == "system":
+            turns.append(("说明：" if language == "zh" else "Instruction: ") + msg.content)
+        else:
+            turns.append((q if msg.role == "user" else a) + msg.content)
+    turns.append(a)
+    return "\n".join(turns), True
 
 
 def from_chat_engine(engine):
@@ -101,7 +106,8 @@ def prepare_local(decoder, prompt, *, language="auto", has_context=False):
     model = decoder.model
     if decoder.tokenizer_type == "utf8-bytes-v1":
         from .supervised_language import prompt_prefix
-        prefix = prompt_prefix(prompt, detect_text_language(prompt, language))
+        prefix = prompt if has_context else prompt_prefix(
+            prompt, detect_text_language(prompt, language))
         # The byte checkpoint was trained with a short max context; unlike
         # older experimental CLI, API must never silently truncate history.
         tokens = decoder.vocab.encode(prefix)
