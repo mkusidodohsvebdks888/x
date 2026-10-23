@@ -40,7 +40,14 @@ python autonomous_deepseek_web.py --start --topics "机器学习,英语" --max-q
 local_data/deepseek_web_questions/drafts.jsonl
 ```
 
-当前提问模块只支持主题计划或可选原生小模型提问，**不会自动把 `local_gaps.jsonl` 作为网页发送队列**。可先根据诊断结果人工选择安全的学习主题。严禁把密码、私人对话等敏感信息通过主题发送给网站。
+也可以把 **本地错误诊断产生的候选问题** 直接接入提问队列，但必须先预览，并明确允许发送：
+
+```bash
+python autonomous_deepseek_web.py --dry-run --gap-file local_data/deepseek_web_questions/local_gaps.jsonl --language zh --max-questions 5
+python autonomous_deepseek_web.py --start --gap-file local_data/deepseek_web_questions/local_gaps.jsonl --confirm-send-gaps --language zh --max-questions 5
+```
+
+`--gap-file` 只读取标有 `local-staged-evaluation` 的候选问题，不会把独立评估参考答案一并发送。会过滤明显的邮箱和手机号，但无法识别所有秘密或个人信息；在启动前必须人工检查 `--dry-run` 输出。英文候选可使用 `--language en`。网页回答仍然是未经审核的草稿，不能直接进入训练。
 
 ## 第 3 步：逐条检查并明确批准
 
