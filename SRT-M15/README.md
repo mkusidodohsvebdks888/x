@@ -1,5 +1,8 @@
 # SRT-M15 | 自主架构底层模型（可运行实验版）
 
+> **API 更新：** 已实现 [增量 SSE 流式输出 + 多轮消息 API + 2GB 内存服务器 HTTPS 部署参考](API_STREAM_HTTPS_2GB.md)。可通过单独模型 ID `srt-m15-staged` 加载可信的本地多批次训练检查点，需在服务端配置 `SRT_STAGED_CHECKPOINT`。公网 HTTPS 仍需在自己的服务器上部署。
+
+
 > **110,000 条双语合成实验数据 + 多批次训练：** 在旧 10k 数据上[新增 100k](DATASET_CARD_BILINGUAL_V4_110000.md)，详见[分批训练说明](README_STAGED_TRAINING.md)。支持可复现生成、十批真实梯度更新、无放回循环、中文/英文固定留出样本评估、断点续训与 GitHub Actions 模型产物。**样本未经逐条人工审核，模板数据不等于真实自然语言能力；本项目原生实验模型还不具备普遍流畅双语对话能力。**
 
 > **没有服务器？** 已提供 [Colab GPU + Google Drive 断点续训 Notebook](SRT_M15_110k_GPU_Colab.ipynb) 和 [手机使用教程 / Kaggle 备选路线](README_FREE_GPU.md)。无需购买服务器，但 Colab/Kaggle 免费 GPU 不保证随时可用。
