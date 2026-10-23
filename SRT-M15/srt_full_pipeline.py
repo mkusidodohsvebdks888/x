@@ -60,6 +60,11 @@ def doctor():
     print("This check never downloads models or modifies training weights.")
 
 
+def project_path(path):
+    path = Path(path)
+    return path if path.is_absolute() else HERE / path
+
+
 def batch_filename(offset, pairs):
     return HERE / "local_data/qwen_teacher" / f"batch_{offset:06d}_{offset+pairs:06d}.jsonl"
 
@@ -103,6 +108,10 @@ def parse():
     demo.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto")
     demo.add_argument("--steps", type=int, default=20)
     demo.add_argument("--context", type=int, default=128)
+    assessment = sub.add_parser("evaluate", help="Record held-out student responses for manual review")
+    assessment.add_argument("--checkpoint", type=Path, default=Path("checkpoints/qwen_student/best.pt"))
+    assessment.add_argument("--output", type=Path, default=Path("local_data/evaluation/student_acceptance.json"))
+    assessment.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto")
     student = sub.add_parser("student", help="Chat using ORIGINAL trained SRT-M15 weights")
     student.add_argument("--checkpoint", type=Path, default=Path("checkpoints/qwen_student/best.pt"))
     student.add_argument("--prompt")
@@ -135,7 +144,7 @@ def run(args):
         return invoke("merge_reviewed_sft.py", "--output", args.output,
                       *sum((["--input", path] for path in args.input), []))
     if args.action == "train":
-        data = Path(args.data)
+        data = project_path(args.data)
         if not data.is_file():
             raise ValueError("Verified training dataset not found: " + str(data))
         # Verify before subprocess starts: no --allow-demo-data here.
@@ -150,7 +159,9 @@ def run(args):
                "--batch-size", args.batch_size, "--dim", args.dim,
                "--heads", 4, "--experts", 2, "--reasoning-steps", 1,
                "--max-eval-pairs", 16, "--sampling", "cycle", "--output", args.output]
-        checkpoint = Path(args.output) / "latest.pt"
+        checkpoint = project_path(args.output) / "latest.pt"
+        if not args.resume and checkpoint.exists():
+            raise ValueError("Checkpoint already exists. Use --resume or another --output directory.")
         if args.resume:
             if not checkpoint.is_file():
                 raise ValueError("--resume requested but checkpoint missing: " + str(checkpoint))
@@ -167,8 +178,18 @@ def run(args):
                       "--context", args.context, "--batch-size", 2, "--dim", 16,
                       "--heads", 4, "--experts", 2, "--reasoning-steps", 1,
                       "--max-eval-pairs", 8, "--output", args.output)
+    if args.action == "evaluate":
+        cp = project_path(args.checkpoint)
+        if not cp.is_file() and cp.name == "best.pt":
+            alt = cp.with_name("latest.pt")
+            if alt.is_file():
+                cp = alt
+        if not cp.is_file():
+            raise ValueError("No student checkpoint for assessment: " + str(cp))
+        return invoke("evaluate_student_chat.py", "--checkpoint", cp,
+                      "--output", args.output, "--device", args.device)
     if args.action == "student":
-        cp = Path(args.checkpoint)
+        cp = project_path(args.checkpoint)
         if not cp.is_file():
             latest = cp.with_name("latest.pt")
             if latest.is_file() and cp.name == "best.pt":
