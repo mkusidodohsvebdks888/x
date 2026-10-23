@@ -110,10 +110,12 @@ class SRTChatEngine:
     def _load_language(self):
         if self.language_model is not None:
             return True
-        candidates = [self.root / "checkpoints/srt_m15_byte_qa.pt",
-                      self.root / "checkpoints/srt_m15_qa_continual.pt",
-                      self.root / "checkpoints/srt_m15_qa.pt",
-                      self.root / "checkpoints/srt_m15_lm.pt"]
+        byte_qa = self.root / "checkpoints/srt_m15_byte_qa.pt"
+        continual = self.root / "checkpoints/srt_m15_qa_continual.pt"
+        candidates = ([continual, byte_qa] if os.environ.get("SRT_PREFER_CONTINUAL_QA") == "1"
+                      else [byte_qa, continual])
+        candidates.extend([self.root / "checkpoints/srt_m15_qa.pt",
+                           self.root / "checkpoints/srt_m15_lm.pt"])
         checkpoint = next((p for p in candidates if p.is_file()), None)
         if checkpoint is None:
             return False
