@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from uuid import uuid4
 
 DEFAULT_OUTPUT = Path("local_data/deepseek_web_questions")
+EMAIL_PATTERN = re.compile(r"(?i)\\b[\\w.+-]+@[\\w.-]+\\.[a-z]{2,}\\b")
+PHONE_PATTERN = re.compile(r"(?<!\\d)1[3-9]\\d{9}(?!\\d)")
 QUESTIONS_ZH = (
     "请用通俗的语言解释{topic}是什么，并说明其主要用途。",
     "请围绕{topic}提出三个值得继续探索的问题，并简要解释原因。",
@@ -122,6 +124,40 @@ class LocalQuestionProposer:
             return fallback
 
 
+def load_gap_plan(path, *, language, limit):
+    """Read local weak-question candidates; never load their reference answers."""
+    plan = []
+    used = set()
+    for line_number, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"gap line {line_number}: invalid JSON") from exc
+        if not isinstance(item, dict) or item.get("origin") != "local-staged-evaluation":
+            raise ValueError(f"gap line {line_number}: unrecognized candidate origin")
+        if item.get("review_status") != "candidate-only":
+            raise ValueError(f"gap line {line_number}: not a pending local gap")
+        if item.get("language") != language:
+            continue
+        question = item.get("prompt")
+        if not isinstance(question, str) or not 4 <= len(question.strip()) <= 350:
+            raise ValueError(f"gap line {line_number}: invalid question")
+        question = question.strip()
+        if EMAIL_PATTERN.search(question) or PHONE_PATTERN.search(question):
+            raise ValueError(f"gap line {line_number}: possible private information")
+        if question not in used:
+            plan.append(Question(topic="local-model-gap", text=question,
+                                 origin="local-staged-evaluation-candidate"))
+            used.add(question)
+        if len(plan) >= limit:
+            break
+    if not plan:
+        raise ValueError("No matching safe local gap candidates")
+    return plan
+
+
 def validate_limits(max_questions, interval, max_minutes):
     if not 1 <= max_questions <= 20:
         raise ValueError("max-questions must be 1..20")
@@ -132,7 +168,7 @@ def validate_limits(max_questions, interval, max_minutes):
 
 
 def run(*, client, topics, language, max_questions, interval, max_minutes,
-        output, proposer=None, sleep=time.sleep, now=time.monotonic,
+        output, proposer=None, plan=None, sleep=time.sleep, now=time.monotonic,
         echo=print):
     """Ask a bounded set of questions and save unreviewed drafts as JSONL.
 
@@ -150,12 +186,13 @@ def run(*, client, topics, language, max_questions, interval, max_minutes,
     session = uuid4().hex
     used = set()
     with output.open("a", encoding="utf-8") as fp:
-        for index in range(max_questions):
+        for index in range(min(max_questions, len(plan)) if plan is not None else max_questions):
             if now() - started >= max_minutes * 60:
                 echo("Reached session time limit; stopping.")
                 break
-            fallback = question_at(topics, index, language)
-            candidate = proposer.propose(fallback, language) if proposer else fallback
+            fallback = plan[index] if plan is not None else question_at(topics, index, language)
+            candidate = (proposer.propose(fallback, language)
+                         if proposer and plan is None else fallback)
             if candidate.text in used:
                 candidate = fallback
             if candidate.text in used:
@@ -212,6 +249,10 @@ def main():
     p.add_argument("--max-minutes", type=int, default=15)
     p.add_argument("--question-mode", choices=("template", "native"), default="template")
     p.add_argument("--checkpoint", default="checkpoints/local_dialogues/latest.pt")
+    p.add_argument("--gap-file", default="",
+                   help="Use local model weakness candidates instead of general topics")
+    p.add_argument("--confirm-send-gaps", action="store_true",
+                   help="Explicitly consent to transmitting local gap questions to DeepSeek")
     p.add_argument("--output", default=str(DEFAULT_OUTPUT / "drafts.jsonl"))
     args = p.parse_args()
     try:
@@ -219,11 +260,18 @@ def main():
         validate_limits(args.max_questions, args.interval, args.max_minutes)
     except ValueError as exc:
         p.error(str(exc))
+    try:
+        plan = load_gap_plan(args.gap_file, language=args.language, limit=args.max_questions) if args.gap_file else None
+    except (OSError, ValueError) as exc:
+        p.error(f"Unable to prepare local gap questions: {exc}")
     if args.dry_run:
-        for i in range(args.max_questions):
-            print(f"{i + 1}. {question_at(topics, i, args.language).text}")
+        for i in range(len(plan) if plan is not None else args.max_questions):
+            planned = plan[i] if plan is not None else question_at(topics, i, args.language)
+            print(f"{i + 1}. {planned.text}")
         print("Dry-run only; no DeepSeek request or parameter update.")
         return
+    if plan is not None and not args.confirm_send_gaps:
+        p.error("Local model gap questions may contain private information: use --confirm-send-gaps only after reviewing --dry-run output")
     print("This will send ONLY the planned topics/questions to DeepSeek's visible website.")
     print("Do not use private documents or secrets as topics. No automatic training.")
     proposer = LocalQuestionProposer(args.checkpoint) if args.question_mode == "native" else None
@@ -235,7 +283,7 @@ def main():
         n = run(client=client, topics=topics, language=args.language,
                 max_questions=args.max_questions, interval=args.interval,
                 max_minutes=args.max_minutes, output=args.output,
-                proposer=proposer)
+                proposer=proposer, plan=plan)
         print(f"Finished: {n} response drafts saved locally to {args.output}")
         if n == 0:
             sys.exit(2)
