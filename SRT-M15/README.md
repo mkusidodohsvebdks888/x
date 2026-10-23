@@ -140,3 +140,7 @@ python -m unittest discover -s tests -v
 新增 [百万条数据构建说明](README_CONVERSATION_MILLION.md) 和 [流式构建器](build_conversation_million.py)，支持显式授权的本地 JSONL 或 Hugging Face 数据源、SQLite 去重、中文/英文配额、train/dev/test 分组及 gzip 分片。
 
 **重要：** 尚未下载或训练 100 万条真实对话。构建器仅负责数据准备，且现有 `train_bilingual_stages.py` 不支持直接加载百万条非配对语料；需要专门的流式训练器，模型是否具备流畅对话能力须经独立测试证明。
+
+## 下一阶段：错误驱动提问、人工审核与训练准备
+
+已经增加 [完整使用流程](README_REVIEW_AND_LEARN.md)，包括 `diagnose_local_gaps.py`（本地检测候选知识缺口）、`autonomous_deepseek_web.py --gap-file ... --confirm-send-gaps`（明确授权后将本地问题发送网页版）、`review_deepseek_learning.py`（要求人工核验、来源使用权确认后才能导出 `verified=true` 数据）。仅导出已审样本，不会偷偷运行训练。
