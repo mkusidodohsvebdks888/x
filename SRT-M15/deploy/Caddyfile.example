@@ -1,0 +1,6 @@
+# Replace api.example.com with your real DNS A/AAAA hostname.
+# Caddy obtains and renews TLS certificates when ports 80/443 are reachable.
+# SSE from /v1/chat/completions is passed through the reverse proxy.
+api.example.com {
+    reverse_proxy 127.0.0.1:8000
+}
