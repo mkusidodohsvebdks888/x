@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from autonomous_deepseek_web import (
-    Question, parse_topics, question_at, run, validate_limits,
+    Question, parse_topics, question_at, load_gap_plan, run, validate_limits,
 )
 
 
@@ -79,6 +79,35 @@ class AutonomousDeepSeekTests(unittest.TestCase):
                                 row["training_approved"] is False
                                 for row in rows))
             self.assertTrue(all(row["provider"].startswith("DeepSeek Web") for row in rows))
+
+    def test_local_gap_question_queue_requires_valid_candidates(self):
+        with tempfile.TemporaryDirectory() as folder:
+            gaps = Path(folder) / "gaps.jsonl"
+            rows = [
+                {"language": "zh", "origin": "local-staged-evaluation",
+                 "review_status": "candidate-only",
+                 "prompt": "请说明变压器与注意力机制的区别是什么？"},
+                {"language": "en", "origin": "local-staged-evaluation",
+                 "review_status": "candidate-only",
+                 "prompt": "What is a transformer model?"},
+            ]
+            gaps.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n"
+                                    for row in rows), encoding="utf-8")
+            plan = load_gap_plan(gaps, language="zh", limit=10)
+            self.assertEqual(len(plan), 1)
+            self.assertEqual(plan[0].origin, "local-staged-evaluation-candidate")
+            client = FakeDeepSeek()
+            out = Path(folder) / "drafts.jsonl"
+            self.assertEqual(run(client=client, topics=["unused"],
+                                 language="zh", max_questions=5, interval=20,
+                                 max_minutes=5, output=out, plan=plan,
+                                 sleep=lambda _: None, now=lambda: 0,
+                                 echo=lambda _: None), 1)
+            self.assertEqual(client.questions, [rows[0]["prompt"]])
+            rows[0]["prompt"] = "Send to me@example.com quickly"
+            gaps.write_text(json.dumps(rows[0]) + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "private information"):
+                load_gap_plan(gaps, language="zh", limit=10)
 
     def test_stops_on_ambiguous_website_error_without_retries(self):
         with tempfile.TemporaryDirectory() as folder:
