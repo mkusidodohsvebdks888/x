@@ -167,10 +167,20 @@ def get_approved_rows(drafts, reviews):
             rejected["duplicate-question"] += 1
             continue
         seen.add(key)
+        # Preserve provenance for DeepSeek web drafts and local Qwen
+        # teacher demonstrations; never misattribute Qwen data to DeepSeek.
+        origin = str(draft.get("source", ""))
+        if origin == "deepseek-web-interactive-session":
+            attribution = f"human-reviewed-deepseek-web:{identity}"
+        elif origin.startswith("local-ollama:") and len(origin) <= 180:
+            attribution = f"human-reviewed-{origin}:{identity}"
+        else:
+            rejected["unknown-source"] += 1
+            continue
         approved.append({
             "language": draft["language"], "prompt": draft["prompt"].strip(),
             "response": (edited if edited is not None else draft["response"]).strip(),
-            "source": f"human-reviewed-deepseek-web:{identity}",
+            "source": attribution,
             "verified": True, "review_status": "human-reviewed",
             "review_evidence": review["evidence"], "synthetic": True,
             "split": "auto",
