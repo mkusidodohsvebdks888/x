@@ -83,12 +83,8 @@ class APIDecodingTests(unittest.TestCase):
             prepare_local(dec, "好" * 10)
 
     def test_real_staged_checkpoint_loader(self):
-        cfg = ModelConfig(vocab_size=12, num_classes=12,
-                          max_length=24, dim=16, heads=4,
-                          num_experts=2, reasoning_steps=1)
-        model = SRTM15LanguageModel(cfg)
         # Valid text vocab to match checkpoint's class count.
-        vocab = list("问答：\n你好你是谁a")
+        vocab = list("问答：\n你好是谁a")
         cfg = ModelConfig(vocab_size=len(vocab), num_classes=len(vocab),
                           max_length=24, dim=16, heads=4,
                           num_experts=2, reasoning_steps=1)
