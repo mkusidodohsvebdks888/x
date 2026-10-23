@@ -79,6 +79,18 @@ class HybridAgentTests(unittest.TestCase):
         self.assertEqual(len(reviews), 2)
         self.assertIn("clarify", drafts[1])
 
+    def test_principled_review_prompt_and_configuration(self):
+        seen = []
+        agent = HybridAgent(
+            lambda p: "answer",
+            reviewer=lambda p: seen.append(p) or '{"ok":true,"feedback":"checked"}',
+            review_principles=("State uncertainty clearly.",),
+        )
+        self.assertEqual(agent.run("question").status, "model_review_passed")
+        self.assertIn("State uncertainty clearly.", seen[0])
+        with self.assertRaises(ValueError):
+            HybridAgent(lambda p: "ok", review_principles=())
+
     def test_no_unlimited_retry_on_malformed_review(self):
         writers = []
         agent = HybridAgent(lambda p: writers.append(p) or "draft",
