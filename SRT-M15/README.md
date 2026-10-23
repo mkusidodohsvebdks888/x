@@ -148,3 +148,7 @@ python -m unittest discover -s tests -v
 ## 最快实现本地正常对话（RTX 3080 / Windows）
 
 新增 [最简本地聊天说明](README_CHAT_RTX3080.md)：可在本地 Ollama 安装 `qwen3:4b-instruct`，然后执行 `python start_local.py --chat-backend ollama` 或双击 `start_chat_windows.bat`，通过现有网页界面进行中英文多轮对话。此模式的语言能力来自独立预训练 Qwen 权重，**不代表 SRT-M15 自研模型参数已经训练成熟**；启动聊天不需要生成百万训练数据。
+
+## 用本地 Qwen 生成 SRT-M15 训练草稿（教师数据蒸馏）
+
+新增 [Qwen 教师数据使用指南](README_QWEN_TEACHER_DATA.md) 和 `qwen_teacher_data.py`。运行 `python qwen_teacher_data.py --pairs 20` 可通过本机 Ollama 已下载的 `qwen3:4b-instruct` 生成**最多 20 组 / 40 条**中英文问答草稿，然后经人工审核、来源核查再用 `train_bilingual_stages.py --device cuda` 训练 SRT-M15 自研权重。所有原始教师数据默认是未审核的，**不会自动训练或证明会正常聊天**。
