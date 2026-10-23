@@ -228,7 +228,7 @@ def run(*, client, topics, language, max_questions, interval, max_minutes,
             os.fsync(fp.fileno())
             accepted += 1
             echo(f"Recorded draft #{accepted} (NOT trained): {answer[:200].replace(chr(10), ' ')}")
-            if index + 1 < max_questions:
+            if index + 1 < (len(plan) if plan is not None else max_questions):
                 remaining = max_minutes * 60 - (now() - started)
                 if remaining <= interval:
                     echo("Not enough time remaining for another question.")
