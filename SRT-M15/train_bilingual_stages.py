@@ -93,6 +93,9 @@ def run(args):
         raise ValueError("batch-size must be 2..64 and context must be 8..512")
     if not (0 < args.lr <= .01 and 0 < args.dev_fraction < 1):
         raise ValueError("invalid learning rate or dev fraction")
+    sampling = getattr(args, "sampling", "random")
+    if sampling not in ("random", "cycle"):
+        raise ValueError("sampling must be random or cycle")
     if args.device == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("CUDA unavailable")
     device = "cuda" if args.device == "auto" and torch.cuda.is_available() else (
@@ -125,6 +128,16 @@ def run(args):
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=.01)
     rng = random.Random(args.seed)
     settings = _configuration(args, digest)
+    if sampling == "cycle":
+        # Only add this field for the new mode, preserving compatibility
+        # with existing v1 random-sampling checkpoints.
+        settings["sampling"] = "cycle"
+    cursor = {}
+    if sampling == "cycle":
+        for lang in LANGUAGES:
+            order = list(range(len(windows_by_language[lang])))
+            rng.shuffle(order)
+            cursor[lang] = {"order": order, "offset": 0, "consumed": 0}
     output = Path(args.output)
     start_stage, total_steps = 0, 0
     history = []
@@ -151,6 +164,20 @@ def run(args):
                 if isinstance(value, torch.Tensor):
                     entry[key] = value.to(device)
         rng.setstate(state["rng_state"])
+        if sampling == "cycle":
+            saved = state.get("sampler_cursor")
+            if not isinstance(saved, dict) or set(saved) != set(LANGUAGES):
+                raise ValueError("resume checkpoint lacks cycle sampler state")
+            for lang in LANGUAGES:
+                item = saved[lang]
+                length = len(windows_by_language[lang])
+                if (not isinstance(item, dict) or
+                        not isinstance(item.get("offset"), int) or
+                        not isinstance(item.get("consumed"), int) or
+                        not 0 <= item["offset"] < length or item["consumed"] < 0 or
+                        sorted(item.get("order", [])) != list(range(length))):
+                    raise ValueError("invalid cycle sampler state")
+            cursor = saved
         history = state["history"]
         start_stage, total_steps = int(state["stage"]), int(state["total_steps"])
         best, best_stage = state["best_dev"], int(state["best_stage"])
@@ -181,6 +208,11 @@ def run(args):
             "device": device, "parameters": sum(p.numel() for p in model.parameters()),
             "stage": len(history),
             "total_steps": total_steps, "best_stage": best_stage,
+            "sampling": sampling,
+            "window_counts": {lang: len(windows_by_language[lang]) for lang in LANGUAGES},
+            "cumulative_unique_window_coverage": (
+                {lang: min(cursor[lang]["consumed"], len(windows_by_language[lang]))
+                 for lang in LANGUAGES} if sampling == "cycle" else None),
             "train_examples": {lang: sum(r.language == lang for r in train) for lang in LANGUAGES},
             "dev_examples": {lang: sum(r.language == lang for r in dev) for lang in LANGUAGES},
             "settings": settings, "history": history,
@@ -194,6 +226,25 @@ def run(args):
                       "total_steps": total_steps, "baseline": baseline},
                      ensure_ascii=False), flush=True)
 
+    def take_batch(lang, size):
+        if sampling == "random":
+            return rng.choices(windows_by_language[lang], k=size)
+        # Permutation traversal covers every window without replacement before
+        # any is reused; state is serialized and restored between Actions runs.
+        source = windows_by_language[lang]
+        saved = cursor[lang]
+        chosen = []
+        while len(chosen) < size:
+            if saved["offset"] == len(source):
+                rng.shuffle(saved["order"])
+                saved["offset"] = 0
+            count = min(size - len(chosen), len(source) - saved["offset"])
+            start = saved["offset"]
+            chosen.extend(source[i] for i in saved["order"][start:start + count])
+            saved["offset"] += count
+            saved["consumed"] += count
+        return chosen
+
     for stage in range(start_stage + 1, start_stage + args.stages + 1):
         model.train()
         losses = []
@@ -201,8 +252,8 @@ def run(args):
             # Reserve at least one window for each language in every optimizer step.
             zhn = args.batch_size // 2
             enn = args.batch_size - zhn
-            samples = rng.choices(windows_by_language["zh"], k=zhn)
-            samples += rng.choices(windows_by_language["en"], k=enn)
+            samples = take_batch("zh", zhn)
+            samples += take_batch("en", enn)
             rng.shuffle(samples)
             batch_x = torch.stack([p[0] for p in samples]).to(device)
             batch_y = torch.stack([p[1] for p in samples]).to(device)
@@ -234,6 +285,7 @@ def run(args):
             "optimizer": opt.state_dict(), "rng_state": rng.getstate(),
             "stage": stage, "total_steps": total_steps, "history": history,
             "best_dev": best, "best_stage": best_stage,
+            **({"sampler_cursor": cursor} if sampling == "cycle" else {}),
         }
         # Always keep latest for genuine continuation, even if it is weaker.
         _atomic_torch(output / "latest.pt", checkpoint)
@@ -250,6 +302,8 @@ def run(args):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--data", default="examples/bilingual_toy_sft.jsonl")
+    p.add_argument("--sampling", choices=("random", "cycle"), default="random",
+                   help="cycle visits each training window before replacement")
     p.add_argument("--allow-demo-data", action="store_true")
     p.add_argument("--output", default="checkpoints/bilingual_stages")
     p.add_argument("--resume", default="", help="trusted latest.pt from previous stage/run")
