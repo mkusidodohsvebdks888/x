@@ -95,6 +95,12 @@ def generate():
             topic_id = f"dialogue-{i:04d}-{j:02d}"
             split = "dev" if i % 5 == 0 else "train"
             for lang, prompt, response in (("zh", zq, za), ("en", eq, ea)):
+                # The shared trainer adds the first User prefix itself.
+                # Do not produce a duplicated "用户：用户：" or "用户：User:" header.
+                if lang == "zh" and prompt.startswith("用户："):
+                    prompt = prompt[len("用户："):]
+                elif lang == "en" and prompt.startswith("User: "):
+                    prompt = prompt[len("User: "):]
                 rows.append({
                     "language": lang, "prompt": prompt, "response": response,
                     "topic_id": topic_id, "family_id": f"dialogue-situation-{i:04d}",
