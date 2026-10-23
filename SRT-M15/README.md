@@ -144,3 +144,7 @@ python -m unittest discover -s tests -v
 ## 下一阶段：错误驱动提问、人工审核与训练准备
 
 已经增加 [完整使用流程](README_REVIEW_AND_LEARN.md)，包括 `diagnose_local_gaps.py`（本地检测候选知识缺口）、`autonomous_deepseek_web.py --gap-file ... --confirm-send-gaps`（明确授权后将本地问题发送网页版）、`review_deepseek_learning.py`（要求人工核验、来源使用权确认后才能导出 `verified=true` 数据）。仅导出已审样本，不会偷偷运行训练。
+
+## 最快实现本地正常对话（RTX 3080 / Windows）
+
+新增 [最简本地聊天说明](README_CHAT_RTX3080.md)：可在本地 Ollama 安装 `qwen3:4b-instruct`，然后执行 `python start_local.py --chat-backend ollama` 或双击 `start_chat_windows.bat`，通过现有网页界面进行中英文多轮对话。此模式的语言能力来自独立预训练 Qwen 权重，**不代表 SRT-M15 自研模型参数已经训练成熟**；启动聊天不需要生成百万训练数据。
