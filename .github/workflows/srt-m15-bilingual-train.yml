@@ -1,0 +1,56 @@
+name: SRT-M15 bilingual toy training
+
+on:
+  push:
+    paths:
+      - "SRT-M15/train_common.py"
+      - "SRT-M15/evaluate_bilingual_toy.py"
+      - "SRT-M15/examples/bilingual_toy_sft.jsonl"
+      - "SRT-M15/srt_m15/**"
+      - ".github/workflows/srt-m15-bilingual-train.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: srt-m15-bilingual-toy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  train-bilingual-toy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU torch
+        run: |
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Train small original SRT weights on bilingual toy data
+        working-directory: SRT-M15
+        run: |
+          python train_common.py \
+            --mode sft --data examples/bilingual_toy_sft.jsonl \
+            --steps 30 --batch-size 2 --context 32 --dim 16 \
+            --heads 4 --experts 2 --reasoning-steps 1 \
+            --log-every 10 --device cpu \
+            --output checkpoints/bilingual_toy_sft.pt
+      - name: Evaluate Chinese and English separately on holdout
+        working-directory: SRT-M15
+        run: |
+          python evaluate_bilingual_toy.py \
+            --checkpoint checkpoints/bilingual_toy_sft.pt \
+            --data examples/bilingual_toy_sft.jsonl \
+            --output checkpoints/bilingual_toy_eval.json
+      - name: Upload experimental weights and evaluation
+        uses: actions/upload-artifact@v4
+        with:
+          name: srt-m15-bilingual-toy-${{ github.run_id }}
+          path: |
+            SRT-M15/checkpoints/bilingual_toy_sft.pt
+            SRT-M15/checkpoints/bilingual_toy_eval.json
+          if-no-files-found: error
+          retention-days: 14
