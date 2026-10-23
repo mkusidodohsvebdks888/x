@@ -1,0 +1,40 @@
+{
+  "A": [
+    {
+      "value": 5,
+      "source": "simulation",
+      "verified": true,
+      "timestamp": "2026-10-23T02:11:15.027439+00:00"
+    },
+    {
+      "value": 12,
+      "source": "simulation",
+      "verified": true,
+      "timestamp": "2026-10-23T02:11:15.028558+00:00"
+    },
+    {
+      "value": 5,
+      "source": "simulation",
+      "verified": true,
+      "timestamp": "2026-10-23T02:13:40.701393+00:00"
+    },
+    {
+      "value": 12,
+      "source": "simulation",
+      "verified": true,
+      "timestamp": "2026-10-23T02:13:40.702251+00:00"
+    },
+    {
+      "value": 5,
+      "source": "simulation",
+      "verified": true,
+      "timestamp": "2026-10-23T02:16:52.238958+00:00"
+    },
+    {
+      "value": 12,
+      "source": "simulation",
+      "verified": true,
+      "timestamp": "2026-10-23T02:16:52.241216+00:00"
+    }
+  ]
+}

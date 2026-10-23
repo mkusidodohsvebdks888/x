@@ -13,7 +13,6 @@ import uuid
 from typing import Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 
 from srt_m15.chat import SRTChatEngine
@@ -87,21 +86,6 @@ def create_app(*, api_key=None, engine=None, model_routes=None):
         redoc_url=None,
         openapi_url=None,
     )
-    cors_origins = [
-        origin.strip()
-        for origin in os.getenv("SRT_API_CORS_ORIGINS", "").split(",")
-        if origin.strip()
-    ]
-    if "*" in cors_origins:
-        raise ValueError("SRT_API_CORS_ORIGINS cannot contain a wildcard origin")
-    if cors_origins:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=cors_origins,
-            allow_credentials=False,
-            allow_methods=["GET", "POST"],
-            allow_headers=["Authorization", "Content-Type"],
-        )
     app.state.engine = current_engine
     app.state.model_routes = routes
 

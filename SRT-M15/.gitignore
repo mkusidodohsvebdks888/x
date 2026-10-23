@@ -3,7 +3,14 @@
 !.env.example
 __pycache__/
 *.pyc
-checkpoints/
+.pytest_cache/
 .srt_m15/
+web_memory/
+runtime_model/
 playwright-report/
 test-results/
+checkpoints/*
+!checkpoints/srt_m15_toy.pt
+!checkpoints/srt_m15_lm.pt
+!checkpoints/knowledge.json
+!checkpoints/metrics.json
