@@ -7,8 +7,14 @@ on:
       - "SRT-M15/train_bilingual_stages.py"
       - "SRT-M15/bilingual_data.py"
       - "SRT-M15/examples/bilingual_toy_sft.jsonl"
+      - "SRT-M15/examples/bilingual_synthetic_v1.jsonl"
   workflow_dispatch:
     inputs:
+      training_dataset:
+        description: "Dataset for this run; resume must use the same dataset"
+        type: choice
+        default: "synthetic_260"
+        options: ["synthetic_260", "toy_40"]
       stages:
         description: "Number of new stages this run (1-4)"
         type: choice
@@ -38,6 +44,7 @@ jobs:
     timeout-minutes: 35
     env:
       STAGES: ${{ inputs.stages || '2' }}
+      TRAINING_DATASET: ${{ inputs.training_dataset || 'synthetic_260' }}
       STEPS_PER_STAGE: ${{ inputs.steps_per_stage || '20' }}
       RESUME_RUN_ID: ${{ inputs.resume_run_id || '' }}
       GH_TOKEN: ${{ github.token }}
@@ -69,8 +76,13 @@ jobs:
           if [ -n "$RESUME_RUN_ID" ]; then
             RESUME_ARGS+=(--resume checkpoints/resume/latest.pt)
           fi
+          case "$TRAINING_DATASET" in
+            synthetic_260) DATA_FILE="examples/bilingual_synthetic_v1.jsonl";;
+            toy_40) DATA_FILE="examples/bilingual_toy_sft.jsonl";;
+            *) echo "Unknown dataset"; exit 2;;
+          esac
           python train_bilingual_stages.py \
-            --data examples/bilingual_toy_sft.jsonl --allow-demo-data \
+            --data "$DATA_FILE" --allow-demo-data \
             --output checkpoints/bilingual_stages \
             --stages "$STAGES" --steps-per-stage "$STEPS_PER_STAGE" \
             --device cpu "${RESUME_ARGS[@]}"
