@@ -183,7 +183,9 @@ def get_approved_rows(drafts, reviews):
             "source": attribution,
             "verified": True, "review_status": "human-reviewed",
             "review_evidence": review["evidence"], "synthetic": True,
-            "split": "auto",
+            # Preserve the teacher generator's topic-level holdout split.
+            # Original DeepSeek web drafts without an explicit split remain auto.
+            "split": draft.get("split") if draft.get("split") in ("train", "dev") else "auto",
         })
     return approved, dict(rejected)
 
