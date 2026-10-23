@@ -4,7 +4,7 @@
 
 ## 1. 在电脑部署（直接克隆 GitHub 项目）
 
-项目原始底层源码打包在 \`SRT_M15_Phone_Colab.ipynb\` 里。现在提供 \`bootstrap.py\`，无需 Colab 或下载额外资源，就能把底层 Python 模块提取到克隆后的项目目录：
+项目原始底层源码打包在 `SRT_M15_Phone_Colab.ipynb` 里。现在提供 `bootstrap.py`，无需 Colab 或下载额外资源，就能把底层 Python 模块提取到克隆后的项目目录：
 
 ```bash
 git clone https://github.com/mkusidodohsvebdks888/x.git
@@ -48,7 +48,7 @@ python -m uvicorn api_server:app --host 127.0.0.1 --port 8000
 基本请求（请在另一终端执行）：
 
 ```bash
-curl http://127.0.0.1:8000/v1/chat/completions   -H "Authorization: Bearer your-own-very-long-random-secret"   -H "Content-Type: application/json"   -d '{"model":"srt-m15","messages":[{"role":"user","content":"你是谁"}],"stream":false}'
+curl http://127.0.0.1:8000/v1/chat/completions -H "Authorization: Bearer your-own-very-long-random-secret" -H "Content-Type: application/json" -d '{"model":"srt-m15","messages":[{"role":"user","content":"你是谁"}],"stream":false}'
 ```
 
 请求成功时返回：
