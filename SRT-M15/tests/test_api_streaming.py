@@ -47,6 +47,13 @@ class APIDecodingTests(unittest.TestCase):
         self.assertIn("问：早上好", prompt)
         self.assertIn("答：你好", prompt)
         self.assertIn("问：还记得吗", prompt)
+        staged_prompt, staged_multi = as_prompt([
+            m("user", "早上好"), m("assistant", "你好"), m("user", "还记得吗")
+        ], style="staged")
+        self.assertTrue(staged_multi)
+        self.assertIn("用户：早上好", staged_prompt)
+        self.assertIn("助手：你好", staged_prompt)
+        self.assertTrue(staged_prompt.endswith("助手："))
         with self.assertRaises(ValueError):
             validate_messages([m("user", "hi"), m("user", "again")])
         with self.assertRaises(ValueError):
@@ -84,7 +91,7 @@ class APIDecodingTests(unittest.TestCase):
 
     def test_real_staged_checkpoint_loader(self):
         # Valid text vocab to match checkpoint's class count.
-        vocab = list("问答：\n你好是谁a")
+        vocab = list("问答用户助手：\n你好是谁a")
         cfg = ModelConfig(vocab_size=len(vocab), num_classes=len(vocab),
                           max_length=24, dim=16, heads=4,
                           num_experts=2, reasoning_steps=1)
@@ -97,6 +104,10 @@ class APIDecodingTests(unittest.TestCase):
             decoder = from_staged_checkpoint(path)
             self.assertEqual(decoder.provider, "SRT-M15 staged (local)")
             self.assertEqual(decoder.tokenizer_type, "character")
+            self.assertEqual(decoder.qa_training, "staged_user_assistant")
+            prefix, mode = prepare_local(decoder, "你好")
+            self.assertEqual(mode, "characters")
+            self.assertEqual(decoder.vocab.decode(prefix[0].tolist()), "用户：你好\n助手：")
             self.assertEqual(decoder.model.cfg.max_length, 24)
 
 
