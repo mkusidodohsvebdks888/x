@@ -1,0 +1,40 @@
+{"language":"zh","prompt":"你好","response":"你好！很高兴与你交流。"}
+{"language":"zh","prompt":"早上好","response":"早上好！祝你今天顺利。"}
+{"language":"zh","prompt":"晚上好","response":"晚上好！今天过得怎么样？"}
+{"language":"zh","prompt":"你可以帮我写一封邮件吗","response":"可以，请告诉我收件人、目的和希望的语气。"}
+{"language":"zh","prompt":"帮我制定一个学习计划","response":"可以，请告诉我学习目标、时间和当前基础。"}
+{"language":"zh","prompt":"如何提高英语听力","response":"可以先听慢速材料，再逐步增加难度，并定期复述。"}
+{"language":"zh","prompt":"今天心情不好","response":"如果愿意，可以说说发生了什么。"}
+{"language":"zh","prompt":"我想学编程","response":"建议先掌握变量、条件语句、循环和函数，再做小项目。"}
+{"language":"zh","prompt":"请解释什么是人工智能","response":"人工智能是研究让计算机完成某些智能任务的技术领域。"}
+{"language":"zh","prompt":"谢谢你的帮助","response":"不客气，希望这些信息对你有用。"}
+{"language":"zh","prompt":"什么是翻译","response":"翻译是把一种语言的意思转换成另一种语言。"}
+{"language":"zh","prompt":"请用简单的话解释机器学习","response":"机器学习通过数据训练，让程序找到规律并做出预测。"}
+{"language":"zh","prompt":"我不明白这个概念","response":"可以告诉我具体哪一部分难理解，我换一种说法。"}
+{"language":"zh","prompt":"你能把这句话说得更礼貌吗","response":"可以，请把原句发给我。"}
+{"language":"zh","prompt":"如何养成阅读习惯","response":"每天固定阅读一小段时间，逐步增加阅读量。"}
+{"language":"zh","prompt":"我要准备考试","response":"先明确考试范围，再安排复习、练习与错题回顾。"}
+{"language":"zh","prompt":"我想学习中文语法","response":"可以从句子成分、语序和常用关联词开始。"}
+{"language":"zh","prompt":"能介绍一下你自己吗","response":"我是一个实验性人工智能助手，可以帮助你学习和整理信息。"}
+{"language":"zh","prompt":"我想表达不同意见","response":"可以先肯定对方的观点，再清楚说明你的理由。"}
+{"language":"zh","prompt":"遇到不会回答的问题怎么办","response":"应当承认不确定，并查找可靠资料核实。"}
+{"language":"en","prompt":"Hello","response":"Hello! It's nice to talk with you."}
+{"language":"en","prompt":"Good morning","response":"Good morning! I hope your day goes well."}
+{"language":"en","prompt":"Good evening","response":"Good evening! How was your day?"}
+{"language":"en","prompt":"Can you help me write an email?","response":"Sure. Who is it for, and what would you like to say?"}
+{"language":"en","prompt":"Help me make a study plan","response":"Tell me your goal, available time, and current level."}
+{"language":"en","prompt":"How can I improve my English listening?","response":"Start with clear, slow audio, then practice with more natural speech."}
+{"language":"en","prompt":"I feel upset today","response":"I'm sorry to hear that. Would you like to talk about it?"}
+{"language":"en","prompt":"I want to learn programming","response":"Start with variables, loops, conditions, and functions, then build projects."}
+{"language":"en","prompt":"What is artificial intelligence?","response":"Artificial intelligence is the study of systems that can perform intelligent tasks."}
+{"language":"en","prompt":"Thank you for your help","response":"You're welcome. I'm glad I could help."}
+{"language":"en","prompt":"What is translation?","response":"Translation expresses the meaning of one language in another language."}
+{"language":"en","prompt":"Explain machine learning simply","response":"Machine learning finds patterns in data to make predictions."}
+{"language":"en","prompt":"I don't understand this idea","response":"Tell me which part is confusing, and I'll try another explanation."}
+{"language":"en","prompt":"Could you make this sentence more polite?","response":"Of course. Please share the original sentence."}
+{"language":"en","prompt":"How do I build a reading habit?","response":"Read at a regular time each day and increase the amount gradually."}
+{"language":"en","prompt":"I need to prepare for an exam","response":"Start with the syllabus, then review topics and practice past questions."}
+{"language":"en","prompt":"I want to study Chinese grammar","response":"Begin with word order, sentence parts, and common connectors."}
+{"language":"en","prompt":"Can you introduce yourself?","response":"I'm an experimental AI assistant that can help with learning and organizing information."}
+{"language":"en","prompt":"How can I disagree politely?","response":"Acknowledge the other perspective before explaining your own reasoning."}
+{"language":"en","prompt":"What if you don't know an answer?","response":"I should say I'm uncertain and check reliable information."}
