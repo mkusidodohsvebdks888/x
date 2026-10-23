@@ -44,10 +44,13 @@ class CommonMechanismsTests(unittest.TestCase):
         example = LanguageExample("abcde", target_start=3)
         vocab = character_vocabulary([example])
         windows = make_windows([example], vocab, context=2)
-        self.assertEqual(len(windows), 1 if False else 2)
-        self.assertEqual(windows[0][1].tolist(), [IGNORE_INDEX, IGNORE_INDEX])
-        # The first window is unsupervised, so it is intentionally excluded.
+        # The first two characters only predict masked prompt labels,
+        # so the first window is intentionally dropped.
+        self.assertEqual(len(windows), 1)
         self.assertEqual(windows[0][1].tolist(), [vocab.stoi["d"], vocab.stoi["e"]])
+        padded = make_windows([LanguageExample("abcd")],
+                              vocab, context=2)
+        self.assertEqual(padded[-1][1].tolist(), [vocab.stoi["d"], IGNORE_INDEX])
 
     def test_masked_loss(self):
         logits = torch.zeros(1, 3, 4, requires_grad=True)
