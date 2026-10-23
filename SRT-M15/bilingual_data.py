@@ -20,6 +20,7 @@ class BilingualRecord:
     response: str
     source: str
     split: str = "auto"
+    topic_id: str = ""
 
 
 def normalize_prompt(value):
@@ -57,8 +58,12 @@ def load_records(path, *, allow_demo=False):
         if len(key) < 1 or key in seen:
             raise ValueError(f"row {index}: empty/duplicate prompt (previous row {seen.get(key)})")
         seen[key] = index
+        topic_id = item.get("topic_id", "")
+        if not isinstance(topic_id, str) or len(topic_id) > 100:
+            raise ValueError(f"row {index}: invalid topic_id")
         records.append(BilingualRecord(lang, prompt, response,
-                                      item.get("source") or "unverified-demo", split))
+                                      item.get("source") or "unverified-demo",
+                                      split, topic_id.strip()))
     if not records:
         raise ValueError("no examples")
     return records
@@ -70,6 +75,35 @@ def split_records(records, *, seed=42, dev_fraction=0.2):
         raise ValueError("dev_fraction must be between 0 and 1")
     train, dev = [], []
     rng = random.Random(seed)
+    # For parallel Chinese/English topics, keep *both translations* entirely
+    # in the same split. Splitting translated equivalents across train/dev
+    # would inflate bilingual validation scores via answer/topic leakage.
+    if any(r.topic_id for r in records):
+        if any(not r.topic_id for r in records):
+            raise ValueError("mixed paired/unpaired records: all need topic_id")
+        groups = {}
+        for record in records:
+            groups.setdefault(record.topic_id, []).append(record)
+        if len(groups) < 4:
+            raise ValueError("at least four paired topics are required")
+        for topic_id, group in groups.items():
+            if len(group) != 2 or {r.language for r in group} != set(LANGUAGES):
+                raise ValueError(f"paired topic {topic_id} must contain one zh and one en")
+            if group[0].split != group[1].split:
+                raise ValueError(f"paired topic {topic_id} has conflicting train/dev split")
+        fixed_train = [k for k, v in groups.items() if v[0].split == "train"]
+        fixed_dev = [k for k, v in groups.items() if v[0].split == "dev"]
+        auto = sorted(k for k, v in groups.items() if v[0].split == "auto")
+        rng.shuffle(auto)
+        target_dev = max(1, round(len(groups) * dev_fraction))
+        dev_count = max(0, target_dev - len(fixed_dev))
+        dev_keys = set(fixed_dev + auto[:dev_count])
+        train_keys = set(fixed_train + auto[dev_count:])
+        if not dev_keys or not train_keys:
+            raise ValueError("paired data need both train and dev topics")
+        train = [r for k in sorted(train_keys) for r in groups[k]]
+        dev = [r for k in sorted(dev_keys) for r in groups[k]]
+        return train, dev
     for lang in LANGUAGES:
         group = [r for r in records if r.language == lang]
         if len(group) < 4:
