@@ -36,6 +36,22 @@ def recognize_question(message):
     return ("text",)
 
 
+
+def _is_identity_question(message):
+    """Recognize identity requests independently of the untrained text generator."""
+    normalized = unicodedata.normalize("NFKC", message).casefold()
+    normalized = re.sub(r"[\W_]+", "", normalized)
+    return normalized in {
+        "你是谁", "你是谁呀", "你是谁啊", "你到底是谁", "你好你是谁",
+        "你叫什么", "你叫什么名字", "你叫什么名", "你的名字",
+        "你的名字是什么", "你的身份是什么", "你的身份",
+        "你是什么", "你是什么模型", "你是哪个模型", "你是什么ai",
+        "请介绍一下你自己", "介绍一下你自己", "自我介绍",
+        "自我介绍一下", "你是gpt吗", "你是chatgpt吗",
+        "whoareyou", "whatisyourname", "introduceyourself",
+    }
+
+
 class SRTChatEngine:
     def __init__(self, root=None, arithmetic_path=None, language_path=None):
         self.root = Path(root or ".").resolve()
@@ -85,6 +101,21 @@ class SRTChatEngine:
             return ChatReply("limit", "输入过长，请将问题缩短到400个字符以内。")
         if not message:
             return ChatReply("notice", "请输入问题，例如：1+9=多少，或：你好")
+        # Identity routing is deterministic application logic, not proof of learned knowledge.
+        raw_mode = message.casefold().startswith("/raw ")
+        if raw_mode:
+            message = message[5:].strip()
+            if not message:
+                return ChatReply("notice", "请在 /raw 后输入问题，例如 /raw 你是谁。")
+        if not raw_mode and _is_identity_question(message):
+            return ChatReply(
+                "identity",
+                "我是 SRT-M15，一款从随机权重开始训练的小型 Transformer 实验模型，"
+                "用于研究多分支协作、记忆机制、简单计算和字符级文本生成。"
+                "我不是 ChatGPT，目前还不具备可靠的通用问答能力。\n"
+                "注：本条身份说明由聊天程序的规则返回，并非神经网络独立生成。"
+                "如需查看神经网络的原始续写，请输入 /raw 你是谁。"
+            )
         route = recognize_question(message)
         if route[0] == "unsupported_expression":
             return ChatReply("limit", "当前数学模型仅支持两个 0～9 整数的单次加法；暂不支持连续运算、减法和乘除法。")
