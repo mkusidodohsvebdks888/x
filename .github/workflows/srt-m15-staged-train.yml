@@ -1,0 +1,86 @@
+name: SRT-M15 staged bilingual training
+
+on:
+  push:
+    paths:
+      - ".github/workflows/srt-m15-staged-train.yml"
+      - "SRT-M15/train_bilingual_stages.py"
+      - "SRT-M15/bilingual_data.py"
+      - "SRT-M15/examples/bilingual_toy_sft.jsonl"
+  workflow_dispatch:
+    inputs:
+      stages:
+        description: "Number of new stages this run (1-4)"
+        type: choice
+        default: "2"
+        options: ["1", "2", "3", "4"]
+      steps_per_stage:
+        description: "Optimizer updates per stage"
+        type: choice
+        default: "20"
+        options: ["10", "20", "40", "80"]
+      resume_run_id:
+        description: "Optional prior successful staged-training GitHub Actions run ID"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: srt-m15-staged-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  train-batches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      STAGES: ${{ inputs.stages || '2' }}
+      STEPS_PER_STAGE: ${{ inputs.steps_per_stage || '20' }}
+      RESUME_RUN_ID: ${{ inputs.resume_run_id || '' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU PyTorch
+        run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Retrieve previous checkpoint for genuine continuation
+        if: ${{ inputs.resume_run_id != '' }}
+        shell: bash
+        run: |
+          case "$RESUME_RUN_ID" in
+            *[!0-9]*|'') echo "Invalid resume run ID"; exit 2;;
+          esac
+          mkdir -p SRT-M15/checkpoints/resume
+          gh run download "$RESUME_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "srt-m15-staged-$RESUME_RUN_ID" \
+            --dir SRT-M15/checkpoints/resume
+          test -f SRT-M15/checkpoints/resume/latest.pt
+      - name: Train new bounded stages and evaluate per-language
+        shell: bash
+        working-directory: SRT-M15
+        run: |
+          RESUME_ARGS=()
+          if [ -n "$RESUME_RUN_ID" ]; then
+            RESUME_ARGS+=(--resume checkpoints/resume/latest.pt)
+          fi
+          python train_bilingual_stages.py \
+            --data examples/bilingual_toy_sft.jsonl --allow-demo-data \
+            --output checkpoints/bilingual_stages \
+            --stages "$STAGES" --steps-per-stage "$STEPS_PER_STAGE" \
+            --device cpu "${RESUME_ARGS[@]}"
+      - name: Upload latest and best checkpoints and stage history
+        uses: actions/upload-artifact@v4
+        with:
+          name: srt-m15-staged-${{ github.run_id }}
+          path: |
+            SRT-M15/checkpoints/bilingual_stages/latest.pt
+            SRT-M15/checkpoints/bilingual_stages/best.pt
+            SRT-M15/checkpoints/bilingual_stages/history.json
+          if-no-files-found: error
+          retention-days: 14
