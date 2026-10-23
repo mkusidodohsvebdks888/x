@@ -183,6 +183,9 @@ def get_approved_rows(drafts, reviews):
             "source": attribution,
             "verified": True, "review_status": "human-reviewed",
             "review_evidence": review["evidence"], "synthetic": True,
+            # Retain teacher subject identifiers for cross-batch split checks.
+            "family_id": draft.get("family_id", ""),
+            "teacher_model": draft.get("teacher_model", ""),
             # Preserve the teacher generator's topic-level holdout split.
             # Original DeepSeek web drafts without an explicit split remain auto.
             "split": draft.get("split") if draft.get("split") in ("train", "dev") else "auto",
