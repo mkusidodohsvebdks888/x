@@ -75,8 +75,6 @@ jobs:
             --output checkpoints/bilingual_stages
       - name: Summarize per-language results and prove step continuation
         working-directory: SRT-M15
-        env:
-          GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
         run: |
           python - <<'PY'
           import json, os
@@ -96,7 +94,7 @@ jobs:
 
           summary = (
               "## SRT-M15 true checkpoint continuation\n\n"
-              f"Previous run: {os.environ['RESUME_RUN_ID']}  \\n"
+              f"Previous run: {os.environ['RESUME_RUN_ID']}  \n"
               f"Completed stages: {before['stage']} → {after['stage']}  \\n"
               f"Optimizer steps: {before['total_steps']} → {after['total_steps']}\n\n"
               f"**Earlier last dev**: {short(before['history'][-1]['dev'])}\n\n"
