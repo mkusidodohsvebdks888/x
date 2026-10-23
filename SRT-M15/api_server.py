@@ -207,7 +207,9 @@ def create_app(*, api_key=None, engine=None, model_routes=None, staged_checkpoin
             if not answer.strip():
                 _error(503, "Model returned empty output")
         elif backend in {"local", "staged"}:
-            prompt, packed = as_prompt(request.messages)
+            prompt, packed = as_prompt(
+                request.messages, style="staged" if backend == "staged" else "legacy"
+            )
             # Preflight tokenization *before* returning HTTP 200 to SSE clients.
             with inference_lock:
                 decoder = acquire_decoder(backend)
