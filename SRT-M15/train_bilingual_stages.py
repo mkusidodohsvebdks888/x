@@ -12,6 +12,7 @@ import math
 import os
 from pathlib import Path
 import random
+import shutil
 import uuid
 
 import torch
@@ -157,6 +158,22 @@ def run(args):
             raise ValueError("resume history length differs from completed stages")
         if output.resolve() == Path(args.resume).resolve():
             raise ValueError("output must be a directory, not the resume checkpoint file")
+        # When resuming from a previous GitHub Actions artifact, the new output
+        # directory is empty. Carry forward its previously promoted best model
+        # instead of accidentally losing it if later stages fail promotion.
+        earlier_best = Path(args.resume).with_name("best.pt")
+        dest_best = output / "best.pt"
+        if (best_stage > 0 and earlier_best.is_file()
+                and earlier_best.resolve() != dest_best.resolve()
+                and not dest_best.is_file()):
+            prior = torch.load(earlier_best, map_location="cpu", weights_only=True)
+            if (prior.get("format") != FORMAT or prior.get("settings") != settings
+                    or int(prior.get("stage", -1)) != best_stage
+                    or prior.get("config") != asdict(cfg)
+                    or prior.get("vocab") != vocab.chars):
+                raise ValueError("previous best checkpoint is incompatible")
+            dest_best.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(earlier_best, dest_best)
 
     def report():
         return {
