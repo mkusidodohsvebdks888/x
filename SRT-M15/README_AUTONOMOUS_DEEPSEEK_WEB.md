@@ -91,3 +91,7 @@ DeepSeek 网页回答（严格标记外部来源）
 ```
 
 **验收标准**：实际能够登录并问出第一题、读取并写入一条完整草稿、在触发限额或 Ctrl+C 后停止，且本地权重文件不改变。网页实际联通还需要你在自己的电脑上验证。
+
+## 下一阶段：错误驱动提问、人工审核与训练准备
+
+已经增加 [完整使用流程](README_REVIEW_AND_LEARN.md)，包括 `diagnose_local_gaps.py`（本地检测候选知识缺口）、`autonomous_deepseek_web.py --gap-file ... --confirm-send-gaps`（明确授权后将本地问题发送网页版）、`review_deepseek_learning.py`（要求人工核验、来源使用权确认后才能导出 `verified=true` 数据）。仅导出已审样本，不会偷偷运行训练。
