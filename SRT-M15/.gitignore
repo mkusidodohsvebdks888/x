@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+checkpoints/
+.srt_m15/
+playwright-report/
+test-results/
