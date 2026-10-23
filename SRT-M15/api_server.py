@@ -86,7 +86,9 @@ def create_app(*, api_key=None, engine=None, model_routes=None, staged_checkpoin
     current_engine = engine if engine is not None else SRTChatEngine(
         root=os.environ.get("SRT_MODEL_ROOT") or ".", backend="local",
     )
-    inference_lock = threading.RLock()
+    # Plain Lock (not thread-owned RLock): StreamingResponse's sync
+    # generator may resume on different AnyIO worker threads between yields.
+    inference_lock = threading.Lock()
     decoder_cache = {"staged": None}
 
     @asynccontextmanager
