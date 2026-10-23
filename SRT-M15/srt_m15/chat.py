@@ -37,17 +37,25 @@ def recognize_question(message):
 
 
 class SRTChatEngine:
-    def __init__(self, arithmetic_path="checkpoints/srt_m15_toy.pt",
-                 language_path=None):
-        self.arithmetic_path = Path(arithmetic_path)
+    def __init__(self, root=None, arithmetic_path=None, language_path=None):
+        self.root = Path(root or ".").resolve()
+        self.arithmetic_path = Path(arithmetic_path) if arithmetic_path else self.root / "checkpoints/srt_m15_toy.pt"
         if language_path is None:
-            enhanced = Path("checkpoints/srt_m15_qa.pt")
-            language_path = enhanced if enhanced.is_file() else "checkpoints/srt_m15_lm.pt"
+            enhanced = self.root / "checkpoints/srt_m15_qa.pt"
+            language_path = enhanced if enhanced.is_file() else self.root / "checkpoints/srt_m15_lm.pt"
         self.language_path = Path(language_path)
         self._math = None
         self._lm = None
         self._vocab = None
         torch.set_num_threads(max(1, min(torch.get_num_threads(), 4)))
+
+    def status(self):
+        return {
+            "model": "SRT-M15",
+            "math_checkpoint": self.arithmetic_path.is_file(),
+            "language_checkpoint": self.language_path.is_file(),
+            "capabilities": ["0..9 addition", "character-level text continuation"],
+        }
 
     def _math_model(self):
         if self._math is None:
@@ -73,6 +81,8 @@ class SRTChatEngine:
 
     def reply(self, message, *, new_tokens=36):
         message = message.strip()
+        if len(message) > 400:
+            return ChatReply("limit", "输入过长，请将问题缩短到400个字符以内。")
         if not message:
             return ChatReply("notice", "请输入问题，例如：1+9=多少，或：你好")
         route = recognize_question(message)
@@ -105,7 +115,7 @@ class SRTChatEngine:
             if "□" not in self._vocab.stoi:
                 return ChatReply("vocab", f"旧语言模型词表中缺少：{sample}。请先运行可选问答语料训练，或者输入 1+9=多少 测试数学模型。")
             message = "".join(ch if ch in self._vocab.stoi else "□" for ch in message)
-            notice = f"注意：未见字符 {sample} 已替换为 □，输入语义可能丢失。\\n"
+            notice = f"注意：未见字符 {sample} 已替换为 □，输入语义可能丢失。\n"
         framed = f"问：{message}\n答："
         prompt = framed if all(ch in self._vocab.stoi for ch in "问：\n答") else message
         prompt = prompt[-model.cfg.max_length:]
