@@ -82,12 +82,14 @@ def teacher_messages(language, prompt):
 
 
 def reject_reason(question, answer, limit):
-    if not isinstance(answer, str) or not 5 <= len(answer.strip()) <= limit:
+    if not isinstance(answer, str):
+        return "invalid-length"
+    if normalize_prompt(question) == normalize_prompt(answer):
+        return "echo"
+    if not 5 <= len(answer.strip()) <= limit:
         return "invalid-length"
     if PRIVATE.search(question + answer):
         return "possible-private-data"
-    if normalize_prompt(question) == normalize_prompt(answer):
-        return "echo"
     if ("我是qwen" in answer.casefold().replace(" ", "")
             or "i am qwen" in answer.casefold()):
         return "wrong-model-identity"
