@@ -15,11 +15,11 @@ except ImportError:
 
 engine = SRTChatEngine()
 messages = []
-history = widgets.HTML(value="<div style='padding:12px'>示例：<b>1+9=多少</b> 或 <b>你好</b>。</div>", layout=widgets.Layout(width="100%"))
+history = widgets.HTML(value="<div style='padding:12px'>示例：<b>你是谁</b>、<b>1+9=多少</b>，或 <b>/raw 你是谁</b> 查看模型原始生成。</div>", layout=widgets.Layout(width="100%"))
 textbox = widgets.Textarea(value="", placeholder="输入中文、数字或标点，例如：1+9=多少", description="提问：", layout=widgets.Layout(width="100%", height="96px"))
 send = widgets.Button(description="发送问题", button_style="primary", icon="paper-plane")
 clear = widgets.Button(description="清空对话", icon="trash")
-status = widgets.HTML(value="<small>研究原型：单数字加法与有限字符续写；不是通用问答模型。</small>")
+status = widgets.HTML(value="<small>研究原型：身份说明由程序规则提供；输入 /raw 你是谁 可测试神经网络的原始字符生成。</small>")
 
 def render_history():
     bubbles = []
