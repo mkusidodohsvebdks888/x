@@ -10,13 +10,14 @@ on:
       - "SRT-M15/examples/bilingual_synthetic_v1.jsonl"
       - "SRT-M15/examples/bilingual_synthetic_v2_1000.jsonl"
       - "SRT-M15/generate_bilingual_10k.py"
+      - "SRT-M15/generate_bilingual_110k.py"
   workflow_dispatch:
     inputs:
       training_dataset:
         description: "Dataset for this run; resume must use the same dataset"
         type: choice
-        default: "synthetic_10000"
-        options: ["synthetic_10000", "synthetic_1000", "synthetic_260", "toy_40"]
+        default: "synthetic_110000"
+        options: ["synthetic_110000", "synthetic_10000", "synthetic_1000", "synthetic_260", "toy_40"]
       stages:
         description: "Number of new stages this run (1-10)"
         type: choice
@@ -25,8 +26,8 @@ on:
       steps_per_stage:
         description: "Optimizer updates per stage"
         type: choice
-        default: "160"
-        options: ["20", "40", "80", "160"]
+        default: "320"
+        options: ["20", "40", "80", "160", "320"]
       resume_run_id:
         description: "Optional prior successful staged-training GitHub Actions run ID"
         type: string
@@ -46,8 +47,8 @@ jobs:
     timeout-minutes: 90
     env:
       STAGES: ${{ inputs.stages || '10' }}
-      TRAINING_DATASET: ${{ inputs.training_dataset || 'synthetic_10000' }}
-      STEPS_PER_STAGE: ${{ inputs.steps_per_stage || '160' }}
+      TRAINING_DATASET: ${{ inputs.training_dataset || 'synthetic_110000' }}
+      STEPS_PER_STAGE: ${{ inputs.steps_per_stage || '320' }}
       RESUME_RUN_ID: ${{ inputs.resume_run_id || '' }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -64,6 +65,13 @@ jobs:
           python generate_bilingual_10k.py \
             --output examples/bilingual_synthetic_v3_10000.jsonl \
             --manifest examples/bilingual_synthetic_v3_manifest.json
+      - name: Generate and verify 110k bilingual dataset
+        if: env.TRAINING_DATASET == 'synthetic_110000'
+        working-directory: SRT-M15
+        run: |
+          python generate_bilingual_110k.py \
+            --output examples/bilingual_synthetic_v4_110000.jsonl \
+            --manifest examples/bilingual_synthetic_v4_manifest.json
       - name: Retrieve previous checkpoint for genuine continuation
         if: ${{ inputs.resume_run_id != '' }}
         shell: bash
@@ -86,10 +94,11 @@ jobs:
             RESUME_ARGS+=(--resume checkpoints/resume/latest.pt)
           fi
           case "$TRAINING_DATASET" in
-            synthetic_10000) DATA_FILE="examples/bilingual_synthetic_v3_10000.jsonl"; CONTEXT=256; BATCH=16; SAMPLING=cycle;;
-            synthetic_1000) DATA_FILE="examples/bilingual_synthetic_v2_1000.jsonl"; CONTEXT=208; BATCH=2; SAMPLING=random;;
-            synthetic_260) DATA_FILE="examples/bilingual_synthetic_v1.jsonl"; CONTEXT=32; BATCH=2; SAMPLING=random;;
-            toy_40) DATA_FILE="examples/bilingual_toy_sft.jsonl"; CONTEXT=32; BATCH=2; SAMPLING=random;;
+            synthetic_110000) DATA_FILE="examples/bilingual_synthetic_v4_110000.jsonl"; CONTEXT=256; BATCH=32; SAMPLING=cycle; EVAL_PAIRS=512;;
+            synthetic_10000) DATA_FILE="examples/bilingual_synthetic_v3_10000.jsonl"; CONTEXT=256; BATCH=16; SAMPLING=cycle; EVAL_PAIRS=0;;
+            synthetic_1000) DATA_FILE="examples/bilingual_synthetic_v2_1000.jsonl"; CONTEXT=208; BATCH=2; SAMPLING=random; EVAL_PAIRS=0;;
+            synthetic_260) DATA_FILE="examples/bilingual_synthetic_v1.jsonl"; CONTEXT=32; BATCH=2; SAMPLING=random; EVAL_PAIRS=0;;
+            toy_40) DATA_FILE="examples/bilingual_toy_sft.jsonl"; CONTEXT=32; BATCH=2; SAMPLING=random; EVAL_PAIRS=0;;
             *) echo "Unknown dataset"; exit 2;;
           esac
           python train_bilingual_stages.py \
@@ -97,6 +106,7 @@ jobs:
             --output checkpoints/bilingual_stages \
             --stages "$STAGES" --steps-per-stage "$STEPS_PER_STAGE" \
             --context "$CONTEXT" --batch-size "$BATCH" --sampling "$SAMPLING" \
+            --max-eval-pairs "$EVAL_PAIRS" \
             --device cpu "${RESUME_ARGS[@]}"
       - name: Upload latest and best checkpoints and stage history
         uses: actions/upload-artifact@v4
@@ -117,5 +127,16 @@ jobs:
           path: |
             SRT-M15/examples/bilingual_synthetic_v3_10000.jsonl
             SRT-M15/examples/bilingual_synthetic_v3_manifest.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload generated 110k bilingual dataset and manifest
+        if: env.TRAINING_DATASET == 'synthetic_110000'
+        uses: actions/upload-artifact@v4
+        with:
+          name: srt-m15-110k-data-${{ github.run_id }}
+          path: |
+            SRT-M15/examples/bilingual_synthetic_v4_110000.jsonl
+            SRT-M15/examples/bilingual_synthetic_v4_manifest.json
           if-no-files-found: error
           retention-days: 14
