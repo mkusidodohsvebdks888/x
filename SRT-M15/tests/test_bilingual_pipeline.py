@@ -57,6 +57,26 @@ class BilingualPipelineTests(unittest.TestCase):
             [(r.topic_id, r.language) for r in split_records(records, seed=42)[1]],
         )
 
+    def test_v2_expansion_integrity_and_topic_holdout(self):
+        root = Path(__file__).resolve().parents[1] / "examples"
+        v1 = load_records(root / "bilingual_synthetic_v1.jsonl", allow_demo=True)
+        v2 = load_records(root / "bilingual_synthetic_v2_1000.jsonl", allow_demo=True)
+        self.assertEqual(len(v2), 1000)
+        self.assertEqual(language_counts(v2), {"zh": 500, "en": 500})
+        self.assertEqual(len({r.topic_id for r in v2}), 500)
+        # Previously recorded examples must remain intact in the expanded
+        # dataset. No old training split can be quietly mutated.
+        self.assertEqual(v1, v2[:len(v1)])
+        self.assertTrue(all(x.source and x.topic_id for x in v2))
+        self.assertTrue(all(x.split == "auto" for x in v2))
+        self.assertTrue(all("synthetic" in x.source for x in v2))
+        train, dev = split_records(v2, seed=42)
+        self.assertEqual(language_counts(train), {"zh": 400, "en": 400})
+        self.assertEqual(language_counts(dev), {"zh": 100, "en": 100})
+        self.assertFalse({r.topic_id for r in train} & {r.topic_id for r in dev})
+        self.assertFalse({normalize_prompt(r.prompt) for r in train} &
+                         {normalize_prompt(r.prompt) for r in dev})
+
     def test_paired_data_rejects_conflicting_splits(self):
         rows = [
             {"language": "zh", "prompt": f"问题{i}", "response": f"回答{i}",
