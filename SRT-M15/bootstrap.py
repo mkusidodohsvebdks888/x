@@ -35,13 +35,13 @@ def bootstrap(root=ROOT):
     notebook_path = root / NOTEBOOK.name
     cells = json.loads(notebook_path.read_text(encoding="utf-8"))["cells"]
     source_cell = next(
-        ("" .join(cell.get("source", [])) for cell in cells
+        ("".join(cell.get("source", [])) for cell in cells
          if "SOURCE_ZIP_BASE64" in "".join(cell.get("source", []))),
         None,
     )
     if source_cell is None:
         raise ValueError("Notebook 中找不到嵌入式源代码。")
-    match = re.search(r'^SOURCE_ZIP_BASE64\s*=\s*["\\x27]([A-Za-z0-9+/=]+)["\\x27]',
+    match = re.search(r'^SOURCE_ZIP_BASE64\s*=\s*"([A-Za-z0-9+/=]+)"',
                       source_cell, flags=re.MULTILINE)
     if match is None:
         raise ValueError("Notebook 中未找到合法的源代码压缩包常量。")
