@@ -1,0 +1,23 @@
+[Unit]
+Description=SRT-M15 bounded local text API
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=srtm15
+Group=srtm15
+WorkingDirectory=/opt/srt-m15/repo/SRT-M15
+EnvironmentFile=/etc/srt-m15.env
+ExecStart=/opt/srt-m15/.venv/bin/python -m uvicorn api_server:app --host 127.0.0.1 --port 8000 --workers 1 --limit-concurrency 4 --timeout-keep-alive 5
+Restart=on-failure
+RestartSec=5
+MemoryMax=1500M
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target
