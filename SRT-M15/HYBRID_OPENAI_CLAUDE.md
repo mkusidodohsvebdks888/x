@@ -60,6 +60,15 @@ print(result.trace)
 
 This version routes a **single offline writer step**, preserving the current SRT-M15 prototype's numeric/text limitations. Calling it a hybrid agent does not make the underlying toy model Claude- or GPT-class.
 
+## Command line (new)
+
+```bash
+python hybrid_cli.py "1+2"                      # Local, offline, checkpoint required
+python hybrid_cli.py "1+2" --deepseek-plan --deepseek-review
+```
+
+The second command sends the question and model draft to the DeepSeek API and **requires** a configured `DEEPSEEK_API_KEY` and network access. The CLI calls the optional hybrid runtime but does not change the project's existing browser UI/API. The current local model is still a small experiment and may reject long critique prompts; a reviewer failure is returned as `review_unavailable`, not silently treated as success.
+
 ## Add a real planner/reviewer (explicit optional integration)
 
 Both callbacks must return strict JSON (without Markdown fences):
