@@ -6,7 +6,7 @@
 
 ## 本地运行
 
-**首次运行前，请先生成 10,000 条数据：**
+**首次运行前，请生成累计 110,000 条的合成训练数据（其中新增 100,000 条）：**
 
 ```bash
 python generate_bilingual_110k.py
@@ -22,16 +22,18 @@ python train_bilingual_stages.py \
   --output checkpoints/bilingual_stages
 ```
 
-继续另外 **2 批训练**：
+继续另外 **4 批训练**（**必须保持与初次训练完全相同的数据哈希、上下文、batch-size、步数、采样方式**，只改变本次新增的 `--stages`）：
 
 ```bash
 python train_bilingual_stages.py \
-  --data examples/bilingual_synthetic_v3_10000.jsonl \
-  --allow-demo-data --context 256 --sampling cycle --batch-size 16 \
-  --stages 10 --steps-per-stage 160 \
+  --data examples/bilingual_synthetic_v4_110000.jsonl \
+  --allow-demo-data --context 256 --sampling cycle --batch-size 32 \
+  --max-eval-pairs 512 --stages 4 --steps-per-stage 320 \
   --resume checkpoints/bilingual_stages/latest.pt \
   --output checkpoints/bilingual_stages
 ```
+
+**GitHub 自动接续示例**：见 [专用续训 Workflow](../../.github/workflows/srt-m15-continue-110k.yml)。默认从已完成的 GitHub Actions 运行 `39931718682`（10 批、3200 步）接续 4 批，完成后应累计 **14 批、4480 步**；运行是否真正完成以 Actions 实际日志和 artifact 为准。往后再接续请在 workflow_dispatch 填入**最近一次成功运行的 ID**，不可继续使用初始 ID，否则会从同一个旧权重再走一次重复的训练分支。
 
 **两次执行的训练状态会连续：** 第二次读取第一轮的模型参数、AdamW 优化器状态、批次计数及 Python 随机采样器状态，而非随机重新初始化。第一批与之后的批次必须使用相同数据文件与相关超参数（尤其是每批步数、种子、学习率等），否则明确拒绝恢复。
 
