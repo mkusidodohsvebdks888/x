@@ -192,7 +192,7 @@ button.send:disabled{opacity:.5;cursor:wait}.error{color:#b0473e}.disclaimer{fon
 
  <main class="chat" id="chat"><div class="message bot" id="intro"></div><div class="examples" id="examples"><button class="sample" data-prompt="math">1+9=?</button><button class="sample" data-prompt="zh">你好</button><button class="sample" data-prompt="hello">Hello</button></div></main>
  <footer class="composer"><div class="frame"><label class="hint" for="chat-language">回复语言：</label><select id="chat-language" aria-label="Chat language" style="border:1px solid #d6d8db;border-radius:7px;padding:6px;background:#fff"><option value="auto">自动识别</option><option value="zh">中文</option><option value="en">English</option></select><textarea id="message" maxlength="400" aria-label="Your message"></textarea>
- <div class="actions"><span class="hint" id="hint"></span><button class="send" id="send" type="button"></button></div></div><p class="disclaimer" id="disclaimer"></p></footer>
+ <div class="actions"><span class="hint" id="hint"></span><button id="reset-chat" type="button" style="padding:8px;border:1px solid #d6d8db;border-radius:9px;background:#fff;cursor:pointer">新对话</button><button class="send" id="send" type="button"></button></div></div><p class="disclaimer" id="disclaimer"></p></footer>
 </div>
 <script>
 'use strict';
@@ -207,6 +207,7 @@ $('status').textContent='\u6b63\u5728\u68c0\u67e5\u6a21\u578b';
 function bubble(role, value){const n=document.createElement('div');n.className='message '+role;n.textContent=value;$('chat').appendChild(n);n.scrollIntoView({behavior:'smooth',block:'end'});}
 let working=false;
 const chatHistory=[];
+$('reset-chat').addEventListener('click',()=>{chatHistory.length=0;bubble('bot','已开始新对话，之前的上下文不会继续发送给模型。');});
 async function submit(){const question=$('message').value.trim();if(!question||working)return;
  $('message').value='';bubble('user',question);working=true;$('send').disabled=true;
  try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:question,language:$('chat-language').value,history:chatHistory})});
@@ -378,6 +379,7 @@ async function refreshStatus(){
   $('sub').textContent='SRT-M15 对话界面 · Ollama 本地 Qwen 推理（非 SRT-M15 原生权重）';
   $('intro').textContent='你好！当前启用独立的本地 Qwen 指令模型进行中英文多轮对话。SRT-M15 自研模型及训练面板仍保留为实验功能。';
   $('disclaimer').textContent='对话来源：本机 Ollama / '+d.ollama_model+'。此模式不会更新 SRT-M15 自研权重。';
+  for(const panel of document.querySelectorAll('.learnbar,.practicebar,.webbar,.qabar'))panel.style.display='none';
  }
  const l=d.learning||{};
  if(!switching)$('learning-toggle').checked=!!l.enabled;
@@ -635,7 +637,7 @@ def run_server(model_root, port, open_browser, *, chat_backend="srt-m15",
                 return self._send(403, {"error": "Invalid origin"})
             try:
                 size = int(self.headers.get("Content-Length", ""))
-                if not 0 < size <= 8192:
+                if not 0 < size <= (65536 if self.path == "/api/chat" else 8192):
                     raise ValueError("invalid payload size")
                 body = json.loads(self.rfile.read(size).decode("utf-8"))
                 if not isinstance(body, dict):
@@ -761,6 +763,9 @@ def run_server(model_root, port, open_browser, *, chat_backend="srt-m15",
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     address = "http://127.0.0.1:%s/" % server.server_port
     print("SRT-M15 local interface:", address)
+    if chat_backend == "ollama":
+        print("Conversation backend: Ollama pretrained local model " + ollama_model)
+        print("This does NOT train or change SRT-M15 native weights.")
     print("Press Ctrl+C in this terminal to stop it. The service is local only.")
     if open_browser:
         webbrowser.open(address)
