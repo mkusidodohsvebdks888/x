@@ -1,0 +1,5 @@
+{"question":"什么是过拟合","answer":"过拟合是模型在训练数据上表现较好，但在未见数据上表现较差。","source":"human-reviewed","verified":true,"split":"train"}
+{"question":"如何理解过拟合","answer":"过拟合是模型在训练数据上表现较好，但在未见数据上表现较差。","source":"human-reviewed","verified":true,"split":"dev"}
+{"question":"什么是泛化","answer":"泛化是模型把学习到的规律应用到未见样本的能力。","source":"human-reviewed","verified":true,"split":"train"}
+{"question":"请解释模型泛化","answer":"泛化是模型把学习到的规律应用到未见样本的能力。","source":"human-reviewed","verified":true,"split":"dev"}
+{"question":"我猜的未核验事实","answer":"这条记录不会进入训练。","source":"model-generated","verified":false}
