@@ -132,3 +132,9 @@ python -m unittest discover -s tests -v
 ```
 
 这是字符级、小数据、从零训练的学习实验，不是 ChatGPT、DeepSeek 等商用大模型的复刻；RLHF、DPO、GRPO、多 GPU 训练和多模态仍不在本次模块范围内。
+
+## 本地百万条中英文对话数据流水线（数据目标，不等于训练完成）
+
+新增 [百万条数据构建说明](README_CONVERSATION_MILLION.md) 和 [流式构建器](build_conversation_million.py)，支持显式授权的本地 JSONL 或 Hugging Face 数据源、SQLite 去重、中文/英文配额、train/dev/test 分组及 gzip 分片。
+
+**重要：** 尚未下载或训练 100 万条真实对话。构建器仅负责数据准备，且现有 `train_bilingual_stages.py` 不支持直接加载百万条非配对语料；需要专门的流式训练器，模型是否具备流畅对话能力须经独立测试证明。
