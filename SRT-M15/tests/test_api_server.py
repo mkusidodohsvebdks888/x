@@ -159,6 +159,26 @@ class APITests(unittest.TestCase):
             with TestClient(app):
                 pass
 
+    def test_cors_can_allow_explicit_web_origin(self):
+        with patch.dict(os.environ, {"SRT_API_CORS_ORIGINS": "http://localhost:3000"}):
+            app = create_app(api_key=KEY, engine=FakeEngine(), model_routes={})
+        with TestClient(app) as client:
+            res = client.options(
+                "/v1/chat/completions",
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "Authorization,Content-Type",
+                },
+            )
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.headers.get("access-control-allow-origin"), "http://localhost:3000")
+
+    def test_cors_wildcard_is_rejected(self):
+        with patch.dict(os.environ, {"SRT_API_CORS_ORIGINS": "*"}):
+            with self.assertRaises(ValueError):
+                create_app(api_key=KEY, engine=FakeEngine(), model_routes={})
+
     def test_shutdown_releases_engine(self):
         # The engine shared by the app created in setUp is closed in tearDown.
         app = create_app(api_key=KEY, engine=FakeEngine())
