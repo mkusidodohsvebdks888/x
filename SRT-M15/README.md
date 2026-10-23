@@ -110,3 +110,17 @@ The local browser interface can now practice independently on single-digit addit
 ## 中英双语受控学习扩展
 
 新版提供中文/English 问答草稿、24组中英配对演示、翻译分组防泄漏、按语言均衡取样、两种语言分别检验及聊天语种选择。完整使用方法见 [`README_BILINGUAL_LEARNING.md`](README_BILINGUAL_LEARNING.md)。已有中文训练数据和原始数学/字符权重保留不变；这仍然是小型学习实验而非可靠的中英对话模型。
+
+
+## 新增：主流自回归语言模型共同机制训练链路
+
+参见 [README_COMMON_MECHANISMS.md](README_COMMON_MECHANISMS.md)。
+在现有手写 Transformer、多分支网络上加入可独立运行的预训练、仅监督助手回答的指令 SFT、独立验证、交叉熵、AdamW、梯度裁剪、采样及可复用检查点：
+
+```bash
+python train_common.py --mode pretrain --data examples/common_text_corpus.txt --steps 30
+python train_common.py --mode sft --data examples/common_instruction_examples.jsonl --steps 30
+python -m unittest discover -s tests -v
+```
+
+这是字符级、小数据、从零训练的学习实验，不是 ChatGPT、DeepSeek 等商用大模型的复刻；RLHF、DPO、GRPO、多 GPU 训练和多模态仍不在本次模块范围内。
