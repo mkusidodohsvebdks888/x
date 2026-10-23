@@ -143,6 +143,12 @@ def run(args):
             raise ValueError("missing resume history")
         model.load_state_dict(state["model"])
         opt.load_state_dict(state["optimizer"])
+        # torch.load(map_location='cpu') leaves optimizer buffers on CPU.
+        # Relocate them when continuing on GPU.
+        for entry in opt.state.values():
+            for key, value in entry.items():
+                if isinstance(value, torch.Tensor):
+                    entry[key] = value.to(device)
         rng.setstate(state["rng_state"])
         history = state["history"]
         start_stage, total_steps = int(state["stage"]), int(state["total_steps"])
@@ -156,7 +162,7 @@ def run(args):
         return {
             "format": FORMAT, "model": "original SRT-M15 random-initialized toy",
             "device": device, "parameters": sum(p.numel() for p in model.parameters()),
-            "stage": start_stage + len(history) - start_stage,
+            "stage": len(history),
             "total_steps": total_steps, "best_stage": best_stage,
             "train_examples": {lang: sum(r.language == lang for r in train) for lang in LANGUAGES},
             "dev_examples": {lang: sum(r.language == lang for r in dev) for lang in LANGUAGES},
