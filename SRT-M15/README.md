@@ -1,4 +1,6 @@
 # SRT-M15 | 自主架构底层模型（可运行实验版）
+> **新增：本地自主向 DeepSeek 网页提问**：见 [README_AUTONOMOUS_DEEPSEEK_WEB.md](README_AUTONOMOUS_DEEPSEEK_WEB.md)，须由用户在可见本地浏览器手动登录并启动，回答只保存为待审核草稿；这不是自动训练，也尚未完成你本机上的登录联调。
+
 
 > **API 更新：** 已实现 [增量 SSE 流式输出 + 多轮消息 API + 2GB 内存服务器 HTTPS 部署参考](API_STREAM_HTTPS_2GB.md)。可通过单独模型 ID `srt-m15-staged` 加载可信的本地多批次训练检查点，需在服务端配置 `SRT_STAGED_CHECKPOINT`。公网 HTTPS 仍需在自己的服务器上部署。
 
