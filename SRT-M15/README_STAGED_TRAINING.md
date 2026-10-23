@@ -2,7 +2,7 @@
 
 这一功能已直接接入原生 SRT-M15 模型（**随机初始化的 PyTorch 实验模型**），而不只是将多轮 API 调用误称为训练。每批（stage）执行真实梯度更新，单独验证中文与英文，保存可以完整恢复的最新权重、优化器、随机采样状态及指标历史。
 
-现新增 [260 条原创中英双语合成示例](DATASET_CARD_BILINGUAL_V1.md)（130 对平行话题），旧版 40 条示例仍然保留。**260 条仍远不足以训练出普遍流畅的中文和英文**；数据明确标记未经人工审核，不能把测试 Token 准确率当成真实聊天能力。
+目前新增 [1,000 条中英双语合成示例](DATASET_CARD_BILINGUAL_V2.md)（500 对平行话题），同时保留旧版 [260 条](DATASET_CARD_BILINGUAL_V1.md) 和 40 条示例。**1,000 条仍不足以训练出普遍流畅的中文和英文**；数据未经逐条人工审核，不可把测试 Token 准确率当成真实聊天能力。
 
 ## 本地运行
 
@@ -10,8 +10,8 @@
 
 ```bash
 python train_bilingual_stages.py \
-  --data examples/bilingual_synthetic_v1.jsonl \
-  --allow-demo-data --stages 2 --steps-per-stage 20 \
+  --data examples/bilingual_synthetic_v2_1000.jsonl \
+  --allow-demo-data --context 208 --stages 2 --steps-per-stage 20 \
   --output checkpoints/bilingual_stages
 ```
 
@@ -19,8 +19,8 @@ python train_bilingual_stages.py \
 
 ```bash
 python train_bilingual_stages.py \
-  --data examples/bilingual_synthetic_v1.jsonl \
-  --allow-demo-data --stages 2 --steps-per-stage 20 \
+  --data examples/bilingual_synthetic_v2_1000.jsonl \
+  --allow-demo-data --context 208 --stages 2 --steps-per-stage 20 \
   --resume checkpoints/bilingual_stages/latest.pt \
   --output checkpoints/bilingual_stages
 ```
@@ -42,12 +42,12 @@ python train_bilingual_stages.py \
 
 在 GitHub 仓库的 **Actions → SRT-M15 staged bilingual training → Run workflow** 中，选 `main` 分支，填入（**新数据集需从新检查点开始，不能续接旧 40 条数据的 checkpoint**）：
 
-1. `training_dataset`：选择 `synthetic_260`（默认）或旧的 `toy_40`。
+1. `training_dataset`：选择 `synthetic_1000`（默认），或旧的 `synthetic_260` / `toy_40`。
 2. `stages`：本次训练的批数（1–4）。
 3. `steps_per_stage`：每批更新步数（10、20、40、80）。
 4. `resume_run_id`：首次留空；续训填写**同一数据集与超参数**的上一次成功运行编号。
 
-第一次不填编号时，从零初始化训练；完成后 GitHub 会上传 `srt-m15-staged-<run_id>` artifact。第二次填写该 run id，工作流会读取前一次 artifact 的 `latest.pt` 并在此基础上继续训练，然后上传新的检查点。**继续续训要改填最新一次成功运行的编号**，并沿用相同的 `steps_per_stage` 和数据。
+首次运行不填编号时，从零初始化训练。v2 默认使用 `context=208` 来覆盖绝大多数短对话和完整问答（其最大文本长度约 200 字符）；旧版 `synthetic_260`/`toy_40` 仍为 `context=32`。此前以 `context=32` 训练 v2 所生成的权重不能直接与新配置续训。完成后 GitHub 会上传 `srt-m15-staged-<run_id>` artifact。第二次填写该 run id，工作流会读取前一次 artifact 的 `latest.pt` 并在此基础上继续训练，然后上传新的检查点。**继续续训要改填最新一次成功运行的编号**，并沿用相同的 `steps_per_stage` 和数据。
 
 每次工作流设置执行时长限制，artifact 保留 14 天。超过保留期不能自动下载；应及时下载保存到自己的持久存储。GitHub Actions 受分钟数、CPU 能力和额度约束，不是长期 GPU 模型训练平台。
 
