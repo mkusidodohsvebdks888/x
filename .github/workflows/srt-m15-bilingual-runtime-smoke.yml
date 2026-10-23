@@ -1,0 +1,36 @@
+name: SRT-M15 practical bilingual runtime smoke
+
+on:
+  push:
+    paths:
+      - "SRT-M15/bilingual_runtime.py"
+      - "SRT-M15/requirements_bilingual.txt"
+      - ".github/workflows/srt-m15-bilingual-runtime-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: srt-m15-bilingual-runtime-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  baseline-inference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU PyTorch
+        run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install bilingual runtime
+        run: python -m pip install -r SRT-M15/requirements_bilingual.txt
+      - name: Chinese prompt on pretrained base
+        working-directory: SRT-M15
+        run: python bilingual_runtime.py --prompt "你好，请用一句话介绍你的作用" --max-new-tokens 32
+      - name: English prompt on pretrained base
+        working-directory: SRT-M15
+        run: python bilingual_runtime.py --prompt "Hello, explain how to improve reading in one sentence." --max-new-tokens 32
