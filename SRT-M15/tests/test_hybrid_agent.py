@@ -37,7 +37,7 @@ class HybridAgentTests(unittest.TestCase):
         denied = agent.run("Save a note")
         self.assertEqual(calls, [])
         self.assertEqual(denied.status, "needs_approval")
-        self.assertEqual(denied.trace[-2]["phase"], "write")
+        self.assertEqual(denied.trace[-1]["phase"], "write")
         self.assertIn("approval_required", str(denied.trace))
 
         accepted = agent.run("Save a note", approved_actions={"save"})
