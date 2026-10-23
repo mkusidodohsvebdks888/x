@@ -117,10 +117,10 @@ def prepare_local(decoder, prompt, *, language="auto", has_context=False):
 
     if decoder.tokenizer_type != "character":
         raise ValueError("Unsupported tokenizer")
-    if decoder.qa_training.startswith("masked_answer"):
-        prefix = "问：" + prompt + "\n答："
-    elif has_context:
+    if has_context:
         prefix = prompt
+    elif decoder.qa_training.startswith("masked_answer"):
+        prefix = "问：" + prompt + "\n答："
     else:
         prefix = "问：" + prompt + "\n答："
     if any(c not in decoder.vocab.stoi for c in prefix):
@@ -145,11 +145,9 @@ def iter_local_tokens(decoder, prompt, *, max_tokens=80, language="auto",
     with torch.inference_mode():
         for _ in range(max_tokens):
             logits = decoder.model(ids[:, -decoder.model.cfg.max_length:])["logits"][:, -1]
-            if decoder.qa_training.startswith("masked_answer"):
-                next_id = int(logits.argmax(dim=-1).item())
-            else:
-                probabilities = torch.softmax(logits / 0.8, dim=-1)
-                next_id = int(torch.multinomial(probabilities, num_samples=1).item())
+            # API currently only supports temperature=0 (or omitted), so
+            # greedy decoding is deterministic and reproducible.
+            next_id = int(logits.argmax(dim=-1).item())
             if mode == "bytes":
                 piece = incremental.decode(bytes([next_id]), final=False)
             else:
