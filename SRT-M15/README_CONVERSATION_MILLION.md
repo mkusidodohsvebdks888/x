@@ -79,6 +79,17 @@ local_data/conversation_million/
 - 生成器当前采用单次全量运行；中断后使用新空目录重启，不应手动拼接未验证的残片。
 - 文件写到本地，不会自动上传 GitHub。
 
+## 先从百万数据中抽出少量样本，验证本地训练链路
+
+为了不让普通电脑一次载入一百万行，已增加 `sample_conversation_shards.py`，按中英文分别从 train/dev gzip 分片进行固定种子抽样，输出旧版训练器可读取的小型 **未审核实验** JSONL。即便百万数据不达标，只要各 split 有足够样本，也可以运行小测试。
+
+```bash
+python sample_conversation_shards.py --input local_data/conversation_million --train-per-language 400 --dev-per-language 50
+python train_bilingual_stages.py --data local_data/conversation_smoke.jsonl --allow-demo-data --batch-size 2 --context 128 --stages 1 --steps-per-stage 20 --output checkpoints/conversation_smoke
+```
+
+测试器仍会用旧版字符级网络；**这只训练每种语言的 400 条抽样示例，不是完整百万条训练**。可在 `checkpoints/conversation_smoke/history.json` 查看独立验证 Loss，生成质量需单独人工评估。
+
 ## 与 SRT-M15 训练的关系
 
 现有 `train_bilingual_stages.py` 会一次性读取完整 JSONL、创建字级词表和内存窗口；并要求中英文按 topic 成对。此处真实语料通常不成对、规模也很大，**不要直接把百万数据拼起来喂给旧训练脚本**。
