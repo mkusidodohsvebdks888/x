@@ -1,0 +1,120 @@
+name: SRT-M15 continue 110k bilingual training
+
+on:
+  push:
+    paths:
+      - ".github/workflows/srt-m15-continue-110k.yml"
+  workflow_dispatch:
+    inputs:
+      resume_run_id:
+        description: "Successful previous staged run ID; must use same data and hyperparameters"
+        type: string
+        required: true
+        default: "39931718682"
+      stages:
+        description: "Additional batches (320 optimizer updates each)"
+        type: choice
+        default: "4"
+        options: ["1", "2", "3", "4"]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: srt-m15-110k-continuation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resume-batches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RESUME_RUN_ID: ${{ inputs.resume_run_id || '39931718682' }}
+      NEW_STAGES: ${{ inputs.stages || '4' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU PyTorch
+        run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Recreate and verify original 110k bilingual dataset
+        working-directory: SRT-M15
+        run: |
+          python generate_bilingual_110k.py \
+            --output examples/bilingual_synthetic_v4_110000.jsonl \
+            --manifest examples/bilingual_synthetic_v4_manifest.json
+      - name: Validate previous completed run and download genuine latest checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$RESUME_RUN_ID" in
+            *[!0-9]*|'') echo "Invalid run ID"; exit 2;;
+          esac
+          CURRENT=$(gh run view "$RESUME_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion,workflowName)
+          echo "$CURRENT" | python -c 'import json,sys; x=json.load(sys.stdin); assert x["conclusion"] == "success", x; assert x["workflowName"] in ("SRT-M15 staged bilingual training","SRT-M15 continue 110k bilingual training"), x'
+          mkdir -p SRT-M15/checkpoints/resume
+          gh run download "$RESUME_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "srt-m15-staged-$RESUME_RUN_ID" \
+            --dir SRT-M15/checkpoints/resume
+          test -s SRT-M15/checkpoints/resume/latest.pt
+          test -s SRT-M15/checkpoints/resume/history.json
+      - name: Resume REAL optimizer, parameters and bilingual cycle sampler (no reset)
+        working-directory: SRT-M15
+        shell: bash
+        run: |
+          set -euo pipefail
+          python train_bilingual_stages.py \
+            --data examples/bilingual_synthetic_v4_110000.jsonl \
+            --allow-demo-data --context 256 --batch-size 32 --sampling cycle \
+            --max-eval-pairs 512 --stages "$NEW_STAGES" \
+            --steps-per-stage 320 --device cpu \
+            --resume checkpoints/resume/latest.pt \
+            --output checkpoints/bilingual_stages
+      - name: Summarize per-language results and prove step continuation
+        working-directory: SRT-M15
+        env:
+          GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          before = json.loads(Path("checkpoints/resume/history.json").read_text())
+          after = json.loads(Path("checkpoints/bilingual_stages/history.json").read_text())
+          count = int(os.environ["NEW_STAGES"])
+          assert before["total_steps"] >= 3200
+          assert after["stage"] == before["stage"] + count
+          assert after["total_steps"] == before["total_steps"] + 320 * count
+          assert after["history"][:len(before["history"])] == before["history"]
+          assert Path("checkpoints/bilingual_stages/latest.pt").is_file()
+
+          def short(record):
+              return " | ".join(f"{k}: loss {record[k]['token_loss']:.4f}, accuracy {record[k]['token_accuracy']:.2%}" for k in ("zh","en"))
+
+          summary = (
+              "## SRT-M15 true checkpoint continuation\n\n"
+              f"Previous run: {os.environ['RESUME_RUN_ID']}  \\n"
+              f"Completed stages: {before['stage']} → {after['stage']}  \\n"
+              f"Optimizer steps: {before['total_steps']} → {after['total_steps']}\n\n"
+              f"**Earlier last dev**: {short(before['history'][-1]['dev'])}\n\n"
+              f"**Current last dev**: {short(after['history'][-1]['dev'])}\n\n"
+              f"**Best stage**: {after['best_stage']}\n\n"
+              "Synthetic held-out token accuracy DOES NOT establish general chat fluency.\n"
+          )
+          print(summary)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+              f.write(summary)
+          PY
+      - name: Upload resumable latest, retained best and cumulative history
+        uses: actions/upload-artifact@v4
+        with:
+          name: srt-m15-staged-${{ github.run_id }}
+          path: |
+            SRT-M15/checkpoints/bilingual_stages/latest.pt
+            SRT-M15/checkpoints/bilingual_stages/best.pt
+            SRT-M15/checkpoints/bilingual_stages/history.json
+          if-no-files-found: error
+          retention-days: 14
