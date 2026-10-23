@@ -78,15 +78,16 @@ jobs:
             RESUME_ARGS+=(--resume checkpoints/resume/latest.pt)
           fi
           case "$TRAINING_DATASET" in
-            synthetic_1000) DATA_FILE="examples/bilingual_synthetic_v2_1000.jsonl";;
-            synthetic_260) DATA_FILE="examples/bilingual_synthetic_v1.jsonl";;
-            toy_40) DATA_FILE="examples/bilingual_toy_sft.jsonl";;
+            synthetic_1000) DATA_FILE="examples/bilingual_synthetic_v2_1000.jsonl"; CONTEXT=208;;
+            synthetic_260) DATA_FILE="examples/bilingual_synthetic_v1.jsonl"; CONTEXT=32;;
+            toy_40) DATA_FILE="examples/bilingual_toy_sft.jsonl"; CONTEXT=32;;
             *) echo "Unknown dataset"; exit 2;;
           esac
           python train_bilingual_stages.py \
             --data "$DATA_FILE" --allow-demo-data \
             --output checkpoints/bilingual_stages \
             --stages "$STAGES" --steps-per-stage "$STEPS_PER_STAGE" \
+            --context "$CONTEXT" \
             --device cpu "${RESUME_ARGS[@]}"
       - name: Upload latest and best checkpoints and stage history
         uses: actions/upload-artifact@v4
