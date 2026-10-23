@@ -58,6 +58,33 @@ class StagedTrainingTests(unittest.TestCase):
                                 f"Mismatch in {name}")
             self.assertEqual(full["history"], resumed["history"])
 
+    def test_cycle_sampler_exact_resume_and_coverage(self):
+        with tempfile.TemporaryDirectory() as home:
+            root = Path(home)
+            continuous = args_for(root / "continuous", stages=3)
+            continuous.sampling = "cycle"
+            result1 = run(continuous)
+            self.assertEqual(result1["sampling"], "cycle")
+            self.assertGreater(result1["cumulative_unique_window_coverage"]["zh"], 0)
+            first = args_for(root / "staged", stages=1)
+            first.sampling = "cycle"
+            run(first)
+            resume = args_for(root / "staged", stages=2,
+                              resume=root / "staged/latest.pt")
+            resume.sampling = "cycle"
+            result2 = run(resume)
+            self.assertEqual(result2["total_steps"], 6)
+            self.assertEqual(result1["history"], result2["history"])
+            self.assertEqual(result1["cumulative_unique_window_coverage"],
+                             result2["cumulative_unique_window_coverage"])
+            for language in ("zh", "en"):
+                self.assertLessEqual(result1["cumulative_unique_window_coverage"][language],
+                                     result1["window_counts"][language])
+            a = torch.load(root / "continuous/latest.pt", weights_only=True)
+            b = torch.load(root / "staged/latest.pt", weights_only=True)
+            for key in a["model"]:
+                self.assertTrue(torch.equal(a["model"][key], b["model"][key]), key)
+
     def test_cross_run_artifact_carries_forward_best(self):
         with tempfile.TemporaryDirectory() as home:
             root = Path(home)
