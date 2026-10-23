@@ -36,7 +36,7 @@ Answer + provider + bounded event trace + assessment state
 - Strict JSON planning with safe single-step fallback; unrecognized tools cannot execute.
 - Configurable limits: planning steps, revisions, question/context/tool-output lengths.
 - Registered read-only tool calls and per-run approvals for tools marked `read_only=False`.
-- Model-review feedback loop and explicit result states: `not_reviewed`, `review_unavailable`, `model_review_passed`, `needs_review`, `needs_approval`, `model_error`.
+- Configurable review principles (Constitutional-AI-inspired inference-time rubric, **not** CAI model training).\n- Model-review feedback loop and explicit result states: `not_reviewed`, `review_unavailable`, `model_review_passed`, `needs_review`, `needs_approval`, `model_error`.
 - Minimal phase/status trace; tool exceptions do not leak raw exception messages.
 - Existing chat engine behavior and external-backend opt-in remain unchanged.
 
