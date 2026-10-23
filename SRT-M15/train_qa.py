@@ -111,9 +111,8 @@ def answer(model, vocab, question, device, max_new_tokens=80):
 def evaluate(model, vocab, dev_examples, pad_id, device, context):
     model.eval()
     total_loss, count = 0.0, 0
-    for question, reply in DEV:
-        x, y = collate([make_example(vocab, question, reply, context)],
-                       pad_id, device)
+    for example in dev_examples:
+        x, y = collate([example], pad_id, device)
         logits = model(x)["logits"].reshape(-1, len(vocab.chars))
         total_loss += F.cross_entropy(logits, y.reshape(-1),
                                       ignore_index=-100, reduction="sum").item()
