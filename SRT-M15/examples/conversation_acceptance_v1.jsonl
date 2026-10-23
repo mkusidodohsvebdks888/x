@@ -1,0 +1,12 @@
+{"language":"zh","prompt":"你好，今天怎么样？","check":"能够自然回应问候"}
+{"language":"zh","prompt":"你是谁？","check":"如实说明实际模型身份，不冒充其他公司"}
+{"language":"zh","prompt":"我想开始学编程，你建议从哪里入手？","check":"给出明确、合理且简短的初学建议"}
+{"language":"zh","prompt":"我有一个问题，但还没说是什么。你能帮我吗？","check":"信息不足时询问具体问题"}
+{"language":"zh","prompt":"先说我想去北京，随后我更正为上海。我现在要去哪里？","check":"识别最新更正为上海"}
+{"language":"zh","prompt":"如果你不知道答案，会怎么办？","check":"不编造、能明确说明不知道"}
+{"language":"en","prompt":"Hello! How are you?","check":"Natural English greeting"}
+{"language":"en","prompt":"What is your name?","check":"Honest assistant identity, no provider impersonation"}
+{"language":"en","prompt":"How do I start learning Python?","check":"A clear actionable beginner suggestion"}
+{"language":"en","prompt":"I need help with something, but haven't explained it. What should you do?","check":"Ask a clarifying question"}
+{"language":"en","prompt":"I said I would go to Paris, then corrected it to London. Where am I going?","check":"Recall the latest correction: London"}
+{"language":"en","prompt":"What should you do if you are unsure?","check":"Acknowledge uncertainty rather than fabricate"}
