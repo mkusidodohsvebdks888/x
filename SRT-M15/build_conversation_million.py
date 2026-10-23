@@ -103,6 +103,8 @@ def extract_pairs(row):
     else:
         prompt = row.get("prompt")
         response = row.get("response") or row.get("output")
+        if not isinstance(prompt, str) and isinstance(row.get("inputs"), str):
+            prompt, response = row.get("inputs"), row.get("targets")
         if not isinstance(prompt, str) and isinstance(row.get("input"), str):
             prompt, response = row.get("input"), row.get("target")
     if isinstance(prompt, str) and isinstance(response, str):
@@ -178,6 +180,15 @@ def run(args):
                 if row is None:
                     count["invalid_json"] += 1
                     continue
+                if isinstance(row, dict):
+                    explicit_language = str(row.get("language_code") or row.get("language") or "").lower()
+                    if explicit_language and (
+                        (explicit_language.startswith("zh") and language != "zh") or
+                        (explicit_language.startswith("en") and language != "en") or
+                        (explicit_language in ("fr", "de", "es", "ru", "ja", "ar", "pt", "ko"))
+                    ):
+                        count["other_language"] += 1
+                        continue
                 for root, prompt, answer in extract_pairs(row):
                     if accepted[language] >= quota[language]:
                         break
