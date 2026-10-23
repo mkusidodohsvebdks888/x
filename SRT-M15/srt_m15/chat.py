@@ -79,6 +79,7 @@ class SRTChatEngine:
         self.language_model = None
         self.vocab = None
         self.language_type = "character"
+        self.qa_training = ""
         self.backend = str(backend).strip().lower()
         self.external_backend = str(
             external_backend or os.environ.get("SRT_EXTERNAL_BACKEND", "api")
@@ -110,12 +111,14 @@ class SRTChatEngine:
         if self.language_model is not None:
             return True
         candidates = [self.root / "checkpoints/srt_m15_byte_qa.pt",
+                      self.root / "checkpoints/srt_m15_qa_continual.pt",
                       self.root / "checkpoints/srt_m15_qa.pt",
                       self.root / "checkpoints/srt_m15_lm.pt"]
         checkpoint = next((p for p in candidates if p.is_file()), None)
         if checkpoint is None:
             return False
         state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+        self.qa_training = str(state.get("qa_training", ""))
         if state.get("tokenizer") == "utf8-bytes-v1":
             from .supervised_language import Utf8ByteVocabulary
             self.vocab = Utf8ByteVocabulary()
@@ -132,6 +135,7 @@ class SRTChatEngine:
         self.language_model = None
         self.vocab = None
         self.language_type = "character"
+        self.qa_training = ""
 
     def status(self):
         return {
@@ -140,10 +144,12 @@ class SRTChatEngine:
             "external_backend": self.external_backend,
             "math_checkpoint": (self.root / "checkpoints/srt_m15_toy.pt").is_file(),
             "language_checkpoint": any((self.root / "checkpoints" / p).is_file()
-                                       for p in ("srt_m15_byte_qa.pt", "srt_m15_qa.pt", "srt_m15_lm.pt")),
+                                       for p in ("srt_m15_byte_qa.pt", "srt_m15_qa_continual.pt", "srt_m15_qa.pt", "srt_m15_lm.pt")),
             "adapted_checkpoint": (self.root / "checkpoints/srt_m15_toy_adapted.pt").is_file(),
             "byte_qa_checkpoint": (self.root / "checkpoints/srt_m15_byte_qa.pt").is_file(),
             "language_type": self.language_type,
+            "qa_training": self.qa_training,
+            "continual_qa_checkpoint": (self.root / "checkpoints/srt_m15_qa_continual.pt").is_file(),
             "capabilities": ["0..9 addition", "experimental Chinese/English UTF-8-byte continuation",
                              "optional DeepSeek Web on desktop", "optional DeepSeek API"],
         }
@@ -237,6 +243,21 @@ class SRTChatEngine:
             prompt = framed
         else:
             prompt = message
+        if self.qa_training.startswith("masked_answer"):
+            if len(prompt) > self.language_model.cfg.max_length:
+                return ChatReply("limit", "问题超过监督模型上下文长度，请缩短输入。")
+            ids = torch.tensor([self.vocab.encode(prompt)], dtype=torch.long)
+            response = []
+            with torch.inference_mode():
+                for _ in range(min(80, max(1, new_tokens * 3))):
+                    logits = self.language_model(ids[:, -self.language_model.cfg.max_length:])["logits"][:, -1]
+                    next_id = int(logits.argmax(-1).item())
+                    char = self.vocab.chars[next_id]
+                    if char == "\n":
+                        break
+                    response.append(char)
+                    ids = torch.cat([ids, torch.tensor([[next_id]], dtype=torch.long)], dim=1)
+            return ChatReply("text", warning + "监督问答模型生成（未经外部事实核验）：\n" + "".join(response))
         prompt = prompt[-self.language_model.cfg.max_length:]
         ids = torch.tensor([self.vocab.encode(prompt)], dtype=torch.long)
         with torch.inference_mode():
