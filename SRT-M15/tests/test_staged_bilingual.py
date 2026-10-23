@@ -58,6 +58,25 @@ class StagedTrainingTests(unittest.TestCase):
                                 f"Mismatch in {name}")
             self.assertEqual(full["history"], resumed["history"])
 
+    def test_cross_run_artifact_carries_forward_best(self):
+        with tempfile.TemporaryDirectory() as home:
+            root = Path(home)
+            previous = root / "previous"
+            run(args_for(previous, stages=1))
+            latest = torch.load(previous / "latest.pt", weights_only=True)
+            # On fixed data and seed this batch should improve the dev score;
+            # if it does not, there is legitimately no promoted best yet.
+            next_output = root / "next_workflow_run"
+            report = run(args_for(next_output, stages=1,
+                                  resume=previous / "latest.pt"))
+            self.assertEqual(report["stage"], 2)
+            self.assertEqual(report["total_steps"], 4)
+            self.assertTrue((next_output / "latest.pt").is_file())
+            if latest["best_stage"] > 0:
+                self.assertTrue((next_output / "best.pt").is_file())
+                best = torch.load(next_output / "best.pt", weights_only=True)
+                self.assertGreater(best["stage"], 0)
+
     def test_wrong_data_and_hyperparameters_cannot_resume(self):
         with tempfile.TemporaryDirectory() as home:
             path = Path(home)
