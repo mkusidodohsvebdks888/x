@@ -20,3 +20,4 @@ local_data/
 examples/local_dialogue_synthetic_v1.jsonl
 examples/bilingual_synthetic_v4_110000.jsonl
 examples/bilingual_synthetic_v4_manifest.json
+.venv/
