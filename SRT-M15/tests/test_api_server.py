@@ -72,24 +72,67 @@ class APITests(unittest.TestCase):
         self.assertEqual(data["srt_provider"], "SRT-M15")
         self.assertEqual(self.engine.calls, [("你是谁", 30, "local")])
 
-    def test_requires_single_turn_instead_of_dropping_history(self):
+    def test_multiturn_passes_full_history_to_local_decoder(self):
+        from unittest.mock import MagicMock
         body = {"model": LOCAL_MODEL, "messages": [
-            {"role": "system", "content": "请简短回答"},
-            {"role": "user", "content": "你是谁"},
+            {"role": "system", "content": "简短回答"},
+            {"role": "user", "content": "你好"},
+            {"role": "assistant", "content": "你好！"},
+            {"role": "user", "content": "我们刚才说了什么？"},
         ]}
-        resp = self.client.post("/v1/chat/completions", headers=self.auth, json=body)
-        self.assertEqual(resp.status_code, 400)
-        self.assertIn("multi-turn", resp.json()["detail"])
+        decoder = MagicMock(provider="SRT-M15 local")
+        with patch("api_server.from_chat_engine", return_value=decoder), \
+             patch("api_server.prepare_local", return_value=(None, "characters")) as prepare, \
+             patch("api_server.iter_local_tokens", return_value=iter(["前", "面", "问", "好"])):
+            response = self.client.post("/v1/chat/completions",
+                                        headers=self.auth, json=body)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["choices"][0]["message"]["content"], "前面问好")
         self.assertEqual(self.engine.calls, [])
+        self.assertIn("你好", prepare.call_args.args[1])
+        self.assertIn("我们刚才说了什么", prepare.call_args.args[1])
 
-    def test_rejects_streaming_and_unsupported_temperature(self):
+
+    def test_real_incremental_sse_chunks(self):
+        from unittest.mock import MagicMock
+        decoder = MagicMock(provider="SRT-M15 local")
+        body = {"model": LOCAL_MODEL,
+                "messages": [{"role": "user", "content": "你好"}],
+                "stream": True, "max_tokens": 12}
+        def fake_iter(_decoder, prompt, **kwargs):
+            self.assertEqual(prompt, "你好")
+            self.assertEqual(kwargs["max_tokens"], 12)
+            yield "你"
+            yield "好"
+        with patch("api_server.from_chat_engine", return_value=decoder), \
+             patch("api_server.prepare_local", return_value=(None, "characters")), \
+             patch("api_server.iter_local_tokens", side_effect=fake_iter):
+            response = self.client.post("/v1/chat/completions",
+                                        headers=self.auth, json=body)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertIn("text/event-stream", response.headers["content-type"])
+        frames = [line[6:] for line in response.text.splitlines()
+                  if line.startswith("data: ")]
+        self.assertEqual(frames[-1], "[DONE]")
+        payloads = [__import__("json").loads(line) for line in frames[:-1]]
+        self.assertEqual(payloads[0]["choices"][0]["delta"]["role"], "assistant")
+        self.assertEqual("".join(c["choices"][0]["delta"].get("content", "")
+                                 for c in payloads), "你好")
+        self.assertEqual(payloads[-1]["choices"][0]["finish_reason"], "stop")
+
+    def test_rejects_invalid_history_and_unsupported_temperature(self):
         base = {"model": LOCAL_MODEL,
                 "messages": [{"role": "user", "content": "你好"}]}
-        for extra in ({"stream": True}, {"temperature": 0.7}):
-            res = self.client.post("/v1/chat/completions",
-                                   headers=self.auth, json={**base, **extra})
-            self.assertEqual(res.status_code, 400)
+        res = self.client.post("/v1/chat/completions",
+                               headers=self.auth, json={**base, "temperature": 0.7})
+        self.assertEqual(res.status_code, 400)
+        res = self.client.post("/v1/chat/completions", headers=self.auth,
+            json={"model": LOCAL_MODEL, "messages": [
+                {"role": "assistant", "content": "wrong"},
+                {"role": "user", "content": "hello"}]})
+        self.assertEqual(res.status_code, 400)
         self.assertEqual(self.engine.calls, [])
+
 
     def test_external_model_is_not_exposed_by_default(self):
         resp = self.client.post("/v1/chat/completions", headers=self.auth, json={
@@ -126,32 +169,44 @@ class APITests(unittest.TestCase):
         self.assertTrue(res.json()["local_language_checkpoint"])
 
     def test_explicitly_enabled_external_model_has_distinct_source(self):
+        from unittest.mock import MagicMock
         fake = FakeEngine()
-        fake.next = ChatReply("external", "远程回答", "DeepSeek API")
+        external = MagicMock(api_key="fake")
+        external.chat.return_value = "远程回答"
         app = create_app(api_key=KEY, engine=fake,
                          model_routes={API_MODEL: "api"})
-        with TestClient(app) as client:
-            models = client.get("/v1/models", headers=self.auth).json()["data"]
-            self.assertEqual(set(x["id"] for x in models),
-                             {LOCAL_MODEL, API_MODEL})
-            res = client.post("/v1/chat/completions", headers=self.auth, json={
-                "model": API_MODEL, "messages": [{"role": "user", "content": "你好"}],
-            })
-            self.assertEqual(res.status_code, 200)
-            self.assertEqual(res.json()["srt_provider"], "DeepSeek API")
-            self.assertEqual(fake.calls, [("你好", 80, "api")])
+        with patch("srt_m15.deepseek_api.DeepSeekAPIClient", return_value=external):
+            with TestClient(app) as client:
+                models = client.get("/v1/models", headers=self.auth).json()["data"]
+                self.assertEqual(set(x["id"] for x in models),
+                                 {LOCAL_MODEL, API_MODEL})
+                res = client.post("/v1/chat/completions", headers=self.auth, json={
+                    "model": API_MODEL,
+                    "messages": [{"role": "user", "content": "你好"}],
+                })
+                self.assertEqual(res.status_code, 200)
+                self.assertEqual(res.json()["srt_provider"], "DeepSeek API")
+                self.assertEqual(res.json()["choices"][0]["message"]["content"], "远程回答")
+                self.assertEqual(fake.calls, [])
+
 
     def test_external_failure_returns_bad_gateway(self):
+        from unittest.mock import MagicMock
+        from srt_m15.deepseek_api import DeepSeekAPIError
         fake = FakeEngine()
-        fake.next = ChatReply("error", "远端超时", "DeepSeek API")
+        external = MagicMock(api_key="fake")
+        external.chat.side_effect = DeepSeekAPIError("远端超时")
         app = create_app(api_key=KEY, engine=fake,
                          model_routes={API_MODEL: "api"})
-        with TestClient(app) as client:
-            res = client.post("/v1/chat/completions", headers=self.auth, json={
-                "model": API_MODEL, "messages": [{"role": "user", "content": "你好"}],
-            })
-            self.assertEqual(res.status_code, 502)
-            self.assertNotIn("远端超时", res.text)
+        with patch("srt_m15.deepseek_api.DeepSeekAPIClient", return_value=external):
+            with TestClient(app) as client:
+                res = client.post("/v1/chat/completions", headers=self.auth, json={
+                    "model": API_MODEL,
+                    "messages": [{"role": "user", "content": "你好"}],
+                })
+                self.assertEqual(res.status_code, 502)
+                self.assertNotIn("远端超时", res.text)
+
 
     def test_api_key_must_be_configured(self):
         app = create_app(api_key="", engine=FakeEngine())
