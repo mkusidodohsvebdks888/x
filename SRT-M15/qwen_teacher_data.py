@@ -96,15 +96,16 @@ def reject_reason(question, answer, limit):
     return ""
 
 
-def make(client, pairs=20, output=DEFAULT, max_tokens=220, max_chars=1000, log=print):
-    if not 5 <= pairs <= 200 or not 32 <= max_tokens <= 512 or not 40 <= max_chars <= 2048:
+def make(client, pairs=20, output=DEFAULT, max_tokens=220, max_chars=1000, log=print, offset=0):
+    if not 5 <= pairs <= 200 or not 32 <= max_tokens <= 512 or not 40 <= max_chars <= 2048 or offset < 0:
         raise ValueError("Limits: pairs=5..200, max_tokens=32..512, max_chars=40..2048")
     output = Path(output)
     manifest = output.with_suffix(".manifest.json")
     if output.exists() or manifest.exists():
         raise ValueError("Output already exists; choose a fresh --output path")
     rows, rejects = [], Counter()
-    for index in range(pairs):
+    for batch_index in range(pairs):
+        index = offset + batch_index
         topic, zh, en = planned(index)
         answers = []
         for language, prompt in (("zh", zh), ("en", en)):
@@ -152,7 +153,7 @@ def make(client, pairs=20, output=DEFAULT, max_tokens=220, max_chars=1000, log=p
     summary = {
         "teacher_model": client.model,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "requested_pairs": pairs, "accepted_pairs": len(rows)//2,
+        "requested_pairs": pairs, "start_index": offset, "accepted_pairs": len(rows)//2,
         "records": len(rows), "train_records": len(train), "dev_records": len(dev),
         "languages": dict(Counter(row["language"] for row in rows)),
         "skipped": dict(rejects),
@@ -179,16 +180,17 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--pairs", type=int, default=20)
+    p.add_argument("--offset", type=int, default=0, help="Global question-pair index for independent successive batches")
     p.add_argument("--model", default="qwen3:4b-instruct")
     p.add_argument("--output", type=Path, default=DEFAULT)
     p.add_argument("--max-tokens", type=int, default=220)
     p.add_argument("--max-answer-chars", type=int, default=1000)
     args = p.parse_args()
-    if not 5 <= args.pairs <= 200:
+    if not 5 <= args.pairs <= 200 or args.offset < 0:
         p.error("pairs must be 5..200")
     if args.dry_run:
         for i in range(args.pairs):
-            _, zh, en = planned(i)
+            _, zh, en = planned(args.offset + i)
             print(f"{i + 1}: ZH {zh}\n   EN {en}")
         print("Preview only: no Ollama calls or training.")
         return
@@ -196,7 +198,8 @@ def main():
     try:
         result = make(client=OllamaLocalClient(model=args.model),
                       pairs=args.pairs, output=args.output,
-                      max_tokens=args.max_tokens, max_chars=args.max_answer_chars)
+                      max_tokens=args.max_tokens, max_chars=args.max_answer_chars,
+                      offset=args.offset)
     except (ValueError, OSError, RuntimeError) as exc:
         p.exit(2, f"Teacher generation failed: {exc}\n")
     print(json.dumps(result, ensure_ascii=False, indent=2))
