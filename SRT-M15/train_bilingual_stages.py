@@ -93,6 +93,9 @@ def run(args):
         raise ValueError("batch-size must be 2..64 and context must be 8..512")
     if not (0 < args.lr <= .01 and 0 < args.dev_fraction < 1):
         raise ValueError("invalid learning rate or dev fraction")
+    max_eval_pairs = getattr(args, "max_eval_pairs", 0)
+    if not isinstance(max_eval_pairs, int) or max_eval_pairs < 0:
+        raise ValueError("max-eval-pairs must be nonnegative")
     sampling = getattr(args, "sampling", "random")
     if sampling not in ("random", "cycle"):
         raise ValueError("sampling must be random or cycle")
@@ -111,6 +114,21 @@ def run(args):
     train_examples = [instruction_example(r.prompt, r.response) for r in train]
     dev_examples = [instruction_example(r.prompt, r.response) for r in dev]
     vocab = character_vocabulary(train_examples, dev_examples)
+    # A large held-out split may contain tens of thousands of examples.
+    # Keep *all* dev examples out of training, but evaluate a stable subset
+    # on each stage so CPU Actions does not spend most time on validation.
+    # Pick paired topic IDs together to preserve an equal zh/en sample.
+    dev_total = len(dev)
+    if max_eval_pairs and len(dev) > max_eval_pairs * 2:
+        topics = {r.topic_id for r in dev}
+        if ("" in topics or len(topics) * 2 != len(dev)):
+            raise ValueError("max-eval-pairs requires paired bilingual topic IDs")
+        scored = sorted(
+            topics, key=lambda t: (
+                hashlib.sha256(f"{args.seed}:{t}:eval".encode()).digest(), t))
+        selected = set(scored[:max_eval_pairs])
+        dev = [r for r in dev if r.topic_id in selected]
+    dev_evaluated = len(dev)
     windows_by_language = {
         lang: make_windows([instruction_example(r.prompt, r.response)
                             for r in train if r.language == lang], vocab, args.context)
@@ -128,6 +146,8 @@ def run(args):
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=.01)
     rng = random.Random(args.seed)
     settings = _configuration(args, digest)
+    if max_eval_pairs:
+        settings["max_eval_pairs"] = max_eval_pairs
     if sampling == "cycle":
         # Only add this field for the new mode, preserving compatibility
         # with existing v1 random-sampling checkpoints.
@@ -214,7 +234,9 @@ def run(args):
                 {lang: min(cursor[lang]["consumed"], len(windows_by_language[lang]))
                  for lang in LANGUAGES} if sampling == "cycle" else None),
             "train_examples": {lang: sum(r.language == lang for r in train) for lang in LANGUAGES},
-            "dev_examples": {lang: sum(r.language == lang for r in dev) for lang in LANGUAGES},
+            "dev_examples_evaluated": {lang: sum(r.language == lang for r in dev) for lang in LANGUAGES},
+            "dev_examples_total": dev_total // 2 if max_eval_pairs else dev_total // 2,
+            "eval_subsample_is_full_holdout": dev_evaluated == dev_total,
             "settings": settings, "history": history,
             "warning": "Token-level tests do not prove broadly fluent Chinese/English dialogue.",
         }
@@ -317,6 +339,8 @@ def parser():
     p.add_argument("--reasoning-steps", type=int, default=1)
     p.add_argument("--lr", type=float, default=.001)
     p.add_argument("--dev-fraction", type=float, default=.2)
+    p.add_argument("--max-eval-pairs", type=int, default=0,
+                   help="stable bilingual heldout topic subsample, 0=all")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     return p
