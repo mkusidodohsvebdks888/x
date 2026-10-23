@@ -4,7 +4,9 @@
 
 ## 1. 基础监督训练
 
-手机用户打开 `SRT_M15_Phone_Colab.ipynb`，依次运行第 1 步提取原始代码、GitHub 同步单元，再运行监督训练单元：
+手机用户建议直接打开 **`SRT_M15_Continual_Learning_Colab.ipynb`**（独立学习 Notebook），第一步从仓库 `main` 下载最新项目，不需要手动复制旧内嵌源码。旧版 `SRT_M15_Phone_Colab.ipynb` 仍可以用来进行加法和初始语言实验。
+
+在项目根目录运行：
 
 ```bash
 python train_qa.py --steps 1600 --eval-every 200 --device auto
@@ -40,7 +42,7 @@ python continual_qa.py \
 2. 每一批把旧训练样本（默认约 60%）和已审核的新训练样本混合。
 3. 用**未参与本轮训练**的新提问验证泛化；用旧知识留出集和以往通过验证的留出集评估遗忘。
 4. 只有新增留出集精确匹配数量**实际提高**，同时旧正确数量不下降且旧损失未过多增加，才保存候选权重。否则只输出报告，继续使用原权重。
-5. 通过后生成 `checkpoints/srt_m15_qa_continual.pt`，聊天程序优先加载它，依次回退到 `srt_m15_qa.pt` 和 `srt_m15_lm.pt`。
+5. 通过后生成 `checkpoints/srt_m15_qa_continual.pt`。默认聊天会优先加载已经存在的 UTF-8 字节 QA 检查点，然后才尝试增量字符 QA；设置环境变量 `SRT_PREFER_CONTINUAL_QA=1` 则优先加载通过门槛的增量字符 QA。没有这些权重时回退至基础字符 QA 和旧语言模型。
 
 这里的“防遗忘”只是对明确评测集的门槛检查，不是数学保证。答案精确匹配过于严格，但适合当前早期、小规模、固定答案的实验。门槛不通过并不意味着模型完全没有学习；意味着没有足够证据允许替换正式权重。
 
@@ -53,7 +55,7 @@ python -m unittest discover -s tests -p test_learning_pipeline.py -v
 python train_qa.py --eval-only --output checkpoints/srt_m15_qa.pt
 ```
 
-`continual_qa.py` 需要在 SRT-M15 根目录运行（`srt_m15` 包由 Notebook 第 1 步解包）；缺少 QA 检查点时先训练。新问题答案过长超过检查点的 `max_length` 时应缩短数据或重新训练具有更长上下文的模型，不能直接改变旧模型的最大长度而假装兼容。
+`continual_qa.py` 需要在 SRT-M15 根目录运行；独立增量学习 Notebook 第 1 步会从 GitHub 下载源码；缺少 QA 检查点时先训练。新问题答案过长超过检查点的 `max_length` 时应缩短数据或重新训练具有更长上下文的模型，不能直接改变旧模型的最大长度而假装兼容。
 
 训练会消耗 CPU/GPU；手机适合用 Colab 控制训练而不是在手机本机运行。模型训练权重与 GitHub 代码是不同的：更新代码并不会自动训练或上传新权重。**本版本不自动把用户的训练数据或权重推送到 GitHub。**
 
