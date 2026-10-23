@@ -152,3 +152,7 @@ python -m unittest discover -s tests -v
 ## 用本地 Qwen 生成 SRT-M15 训练草稿（教师数据蒸馏）
 
 新增 [Qwen 教师数据使用指南](README_QWEN_TEACHER_DATA.md) 和 `qwen_teacher_data.py`。运行 `python qwen_teacher_data.py --pairs 20` 可通过本机 Ollama 已下载的 `qwen3:4b-instruct` 生成**最多 20 组 / 40 条**中英文问答草稿，然后经人工审核、来源核查再用 `train_bilingual_stages.py --device cuda` 训练 SRT-M15 自研权重。所有原始教师数据默认是未审核的，**不会自动训练或证明会正常聊天**。
+
+## Windows + RTX 3080 一整套 Qwen 教师数据与 SRT-M15 训练工具
+
+查看 [README_SRT_FULL_SUITE.md](README_SRT_FULL_SUITE.md)：**双击 `SRT_M15_FULL_SUITE_WINDOWS.bat`** 可打开本地工具菜单；也可以运行 `python srt_full_pipeline.py doctor / chat / generate / review / export / merge / train / student / evaluate` 完整操作。数据必须先人工审核才能严格训练；本地 Qwen 的流畅对话与原生 SRT-M15 学会流畅对话不是一回事。包含 12 项独立对话验收场景。
