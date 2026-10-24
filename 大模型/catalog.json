@@ -1,0 +1,176 @@
+{
+  "title": "大模型",
+  "independent_from": "SRT-M15",
+  "created_on": "2026-10-24",
+  "weights_uploaded": false,
+  "hosted_weights": false,
+  "description": "Only independent official model source manifests and standalone download scripts are stored in this GitHub repository; not model weights.",
+  "families": [
+    {
+      "folder": "DeepSeek",
+      "provider": "DeepSeek",
+      "models": [
+        {
+          "name": "R1-Distill-1.5B",
+          "hf_repo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+        },
+        {
+          "name": "R1-Distill-7B",
+          "hf_repo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
+        },
+        {
+          "name": "R1-Distill-Llama-8B",
+          "hf_repo": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+        },
+        {
+          "name": "R1-671B",
+          "hf_repo": "deepseek-ai/DeepSeek-R1"
+        },
+        {
+          "name": "V3-671B",
+          "hf_repo": "deepseek-ai/DeepSeek-V3"
+        }
+      ]
+    },
+    {
+      "folder": "Qwen",
+      "provider": "阿里 Qwen",
+      "models": [
+        {
+          "name": "Qwen3-0.6B",
+          "hf_repo": "Qwen/Qwen3-0.6B"
+        },
+        {
+          "name": "Qwen3-4B",
+          "hf_repo": "Qwen/Qwen3-4B"
+        },
+        {
+          "name": "Qwen3-8B",
+          "hf_repo": "Qwen/Qwen3-8B"
+        },
+        {
+          "name": "Qwen3-32B",
+          "hf_repo": "Qwen/Qwen3-32B"
+        }
+      ]
+    },
+    {
+      "folder": "OpenAI-gpt-oss",
+      "provider": "OpenAI gpt-oss",
+      "models": [
+        {
+          "name": "gpt-oss-20b",
+          "hf_repo": "openai/gpt-oss-20b"
+        },
+        {
+          "name": "gpt-oss-120b",
+          "hf_repo": "openai/gpt-oss-120b"
+        }
+      ]
+    },
+    {
+      "folder": "Meta-Llama",
+      "provider": "Meta Llama",
+      "models": [
+        {
+          "name": "Llama-3.2-1B-Instruct",
+          "hf_repo": "meta-llama/Llama-3.2-1B-Instruct"
+        },
+        {
+          "name": "Llama-3.2-3B-Instruct",
+          "hf_repo": "meta-llama/Llama-3.2-3B-Instruct"
+        }
+      ]
+    },
+    {
+      "folder": "Google-Gemma",
+      "provider": "Google Gemma",
+      "models": [
+        {
+          "name": "Gemma-3-1B-IT",
+          "hf_repo": "google/gemma-3-1b-it"
+        },
+        {
+          "name": "Gemma-3-4B-IT",
+          "hf_repo": "google/gemma-3-4b-it"
+        }
+      ]
+    },
+    {
+      "folder": "Mistral",
+      "provider": "Mistral AI",
+      "models": [
+        {
+          "name": "Mistral-7B-Instruct-v0.3",
+          "hf_repo": "mistralai/Mistral-7B-Instruct-v0.3"
+        },
+        {
+          "name": "Mistral-Small-3.1-24B",
+          "hf_repo": "mistralai/Mistral-Small-3.1-24B-Instruct-2503"
+        }
+      ]
+    },
+    {
+      "folder": "Microsoft-Phi",
+      "provider": "Microsoft Phi",
+      "models": [
+        {
+          "name": "Phi-4-mini-instruct",
+          "hf_repo": "microsoft/Phi-4-mini-instruct"
+        },
+        {
+          "name": "Phi-4",
+          "hf_repo": "microsoft/phi-4"
+        }
+      ]
+    },
+    {
+      "folder": "ZAI-GLM",
+      "provider": "智谱 / Z.ai GLM",
+      "models": [
+        {
+          "name": "GLM-4.7-Flash",
+          "hf_repo": "zai-org/GLM-4.7-Flash"
+        },
+        {
+          "name": "GLM-4.5-Air",
+          "hf_repo": "zai-org/GLM-4.5-Air"
+        }
+      ]
+    },
+    {
+      "folder": "Kimi",
+      "provider": "Moonshot AI Kimi",
+      "models": [
+        {
+          "name": "Kimi-K2-Instruct",
+          "hf_repo": "moonshotai/Kimi-K2-Instruct"
+        }
+      ]
+    },
+    {
+      "folder": "MiniMax",
+      "provider": "MiniMax AI",
+      "models": [
+        {
+          "name": "MiniMax-M2",
+          "hf_repo": "MiniMaxAI/MiniMax-M2"
+        }
+      ]
+    },
+    {
+      "folder": "Yi",
+      "provider": "零一万物 Yi",
+      "models": [
+        {
+          "name": "Yi-1.5-6B-Chat",
+          "hf_repo": "01-ai/Yi-1.5-6B-Chat"
+        },
+        {
+          "name": "Yi-1.5-9B-Chat",
+          "hf_repo": "01-ai/Yi-1.5-9B-Chat"
+        }
+      ]
+    }
+  ]
+}

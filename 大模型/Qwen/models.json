@@ -1,0 +1,33 @@
+{
+  "provider": "阿里 Qwen",
+  "folder": "Qwen",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "各模型页面 LICENSE（Qwen3 系列常见 Apache-2.0）",
+  "models": [
+    {
+      "name": "Qwen3-0.6B",
+      "hf_repo": "Qwen/Qwen3-0.6B",
+      "source": "https://huggingface.co/Qwen/Qwen3-0.6B",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "Qwen3-4B",
+      "hf_repo": "Qwen/Qwen3-4B",
+      "source": "https://huggingface.co/Qwen/Qwen3-4B",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "Qwen3-8B",
+      "hf_repo": "Qwen/Qwen3-8B",
+      "source": "https://huggingface.co/Qwen/Qwen3-8B",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "Qwen3-32B",
+      "hf_repo": "Qwen/Qwen3-32B",
+      "source": "https://huggingface.co/Qwen/Qwen3-32B",
+      "access": "以模型页面访问状态为准"
+    }
+  ]
+}

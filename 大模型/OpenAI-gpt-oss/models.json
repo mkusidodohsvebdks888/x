@@ -1,0 +1,21 @@
+{
+  "provider": "OpenAI gpt-oss",
+  "folder": "OpenAI-gpt-oss",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "Apache-2.0（还需查看官方使用要求）",
+  "models": [
+    {
+      "name": "gpt-oss-20b",
+      "hf_repo": "openai/gpt-oss-20b",
+      "source": "https://huggingface.co/openai/gpt-oss-20b",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "gpt-oss-120b",
+      "hf_repo": "openai/gpt-oss-120b",
+      "source": "https://huggingface.co/openai/gpt-oss-120b",
+      "access": "以模型页面访问状态为准"
+    }
+  ]
+}

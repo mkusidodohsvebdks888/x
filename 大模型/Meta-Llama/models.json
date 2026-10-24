@@ -1,0 +1,21 @@
+{
+  "provider": "Meta Llama",
+  "folder": "Meta-Llama",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "Llama 社区许可，不是 Apache/MIT；部分仓库需要获批访问",
+  "models": [
+    {
+      "name": "Llama-3.2-1B-Instruct",
+      "hf_repo": "meta-llama/Llama-3.2-1B-Instruct",
+      "source": "https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct",
+      "access": "可能需要申请访问/接受许可"
+    },
+    {
+      "name": "Llama-3.2-3B-Instruct",
+      "hf_repo": "meta-llama/Llama-3.2-3B-Instruct",
+      "source": "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct",
+      "access": "可能需要申请访问/接受许可"
+    }
+  ]
+}

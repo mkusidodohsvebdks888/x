@@ -1,0 +1,21 @@
+{
+  "provider": "Google Gemma",
+  "folder": "Google-Gemma",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "Gemma 专用许可；使用前查阅模型页面要求",
+  "models": [
+    {
+      "name": "Gemma-3-1B-IT",
+      "hf_repo": "google/gemma-3-1b-it",
+      "source": "https://huggingface.co/google/gemma-3-1b-it",
+      "access": "可能需要申请访问/接受许可"
+    },
+    {
+      "name": "Gemma-3-4B-IT",
+      "hf_repo": "google/gemma-3-4b-it",
+      "source": "https://huggingface.co/google/gemma-3-4b-it",
+      "access": "可能需要申请访问/接受许可"
+    }
+  ]
+}

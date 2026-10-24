@@ -1,0 +1,15 @@
+{
+  "provider": "MiniMax AI",
+  "folder": "MiniMax",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "具体以模型页面 LICENSE 为准",
+  "models": [
+    {
+      "name": "MiniMax-M2",
+      "hf_repo": "MiniMaxAI/MiniMax-M2",
+      "source": "https://huggingface.co/MiniMaxAI/MiniMax-M2",
+      "access": "以模型页面访问状态为准"
+    }
+  ]
+}

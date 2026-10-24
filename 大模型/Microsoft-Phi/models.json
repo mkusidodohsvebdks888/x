@@ -1,0 +1,21 @@
+{
+  "provider": "Microsoft Phi",
+  "folder": "Microsoft-Phi",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "本目录所列模型页面声明 MIT，具体以原始许可证为准",
+  "models": [
+    {
+      "name": "Phi-4-mini-instruct",
+      "hf_repo": "microsoft/Phi-4-mini-instruct",
+      "source": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "Phi-4",
+      "hf_repo": "microsoft/phi-4",
+      "source": "https://huggingface.co/microsoft/phi-4",
+      "access": "以模型页面访问状态为准"
+    }
+  ]
+}

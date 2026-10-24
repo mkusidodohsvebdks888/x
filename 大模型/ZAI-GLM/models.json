@@ -1,0 +1,21 @@
+{
+  "provider": "智谱 / Z.ai GLM",
+  "folder": "ZAI-GLM",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "本目录所列模型页面声明 MIT，具体以原始许可证为准",
+  "models": [
+    {
+      "name": "GLM-4.7-Flash",
+      "hf_repo": "zai-org/GLM-4.7-Flash",
+      "source": "https://huggingface.co/zai-org/GLM-4.7-Flash",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "GLM-4.5-Air",
+      "hf_repo": "zai-org/GLM-4.5-Air",
+      "source": "https://huggingface.co/zai-org/GLM-4.5-Air",
+      "access": "以模型页面访问状态为准"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+# Keep fetched weights and cache out of the public Git repo
+**/weights/
+**/downloads/
+**/checkpoints/
+**/.cache/
+*.safetensors
+*.gguf
+*.pt
+*.pth
+*.bin
+*.onnx
+*.ckpt
+__pycache__/

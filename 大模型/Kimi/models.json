@@ -1,0 +1,15 @@
+{
+  "provider": "Moonshot AI Kimi",
+  "folder": "Kimi",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "Modified MIT；核对附加许可条款",
+  "models": [
+    {
+      "name": "Kimi-K2-Instruct",
+      "hf_repo": "moonshotai/Kimi-K2-Instruct",
+      "source": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
+      "access": "以模型页面访问状态为准"
+    }
+  ]
+}

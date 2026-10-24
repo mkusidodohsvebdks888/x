@@ -1,0 +1,39 @@
+{
+  "provider": "DeepSeek",
+  "folder": "DeepSeek",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "具体以各模型官方 LICENSE 为准（蒸馏模型还应核对底座许可）",
+  "models": [
+    {
+      "name": "R1-Distill-1.5B",
+      "hf_repo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "R1-Distill-7B",
+      "hf_repo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "R1-Distill-Llama-8B",
+      "hf_repo": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "R1-671B",
+      "hf_repo": "deepseek-ai/DeepSeek-R1",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-R1",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "V3-671B",
+      "hf_repo": "deepseek-ai/DeepSeek-V3",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V3",
+      "access": "以模型页面访问状态为准"
+    }
+  ]
+}

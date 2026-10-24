@@ -1,0 +1,21 @@
+{
+  "provider": "零一万物 Yi",
+  "folder": "Yi",
+  "weights_uploaded": false,
+  "description": "Independent official-source manifest; not a model-weight mirror.",
+  "license_note": "本目录所列模型页面声明 Apache-2.0，具体以原始许可证为准",
+  "models": [
+    {
+      "name": "Yi-1.5-6B-Chat",
+      "hf_repo": "01-ai/Yi-1.5-6B-Chat",
+      "source": "https://huggingface.co/01-ai/Yi-1.5-6B-Chat",
+      "access": "以模型页面访问状态为准"
+    },
+    {
+      "name": "Yi-1.5-9B-Chat",
+      "hf_repo": "01-ai/Yi-1.5-9B-Chat",
+      "source": "https://huggingface.co/01-ai/Yi-1.5-9B-Chat",
+      "access": "以模型页面访问状态为准"
+    }
+  ]
+}
