@@ -2,7 +2,7 @@
 
 > 这里是我的 GitHub 仓库分类目录。**每个项目仍是独立仓库**，这里仅提供中文名称和跳转链接；不会合并源码、修改模型或同步上游。
 
-**总计：14 个仓库；4 个大分类（AI模型 10、AI执行器 1、执行器技术研究 1、自研模型 2）。**
+**当前账号共 14 个仓库；4 个大分类（AI模型 10、AI执行器 1 + 外部待 Fork 1、执行器技术研究 1、自研模型 2）。**
 
 🔒 表示私有仓库，只有获得授权的 GitHub 用户才能查看。点击下方的分类即可展开或折叠。
 
@@ -25,11 +25,12 @@
 </details>
 
 <details>
-<summary><b>📁 AI执行器（1 个）</b></summary>
+<summary><b>📁 AI执行器（2 项：已有仓库 1 + 待 Fork 1）</b></summary>
 
 | 项目（中文分类） | 用途说明 |
 |---|---|
 | [Strip-Bot（桌面AI执行器）](https://github.com/mkusidodohsvebdks888/Strip-Bot) 🔒 | 自主开发的桌面 AI 聊天与编程工具（私有仓库） |
+| [DeepSeek Harness（智能体执行器）](https://github.com/deepseek-ai/deepseek-harness) 🕗 | DeepSeek 官方开源 Agent 执行框架（MIT 许可），**已加入本分类导航，但尚未 Fork 到个人账号**；[点此创建独立副本](https://github.com/deepseek-ai/deepseek-harness/fork) |
 
 </details>
 
@@ -56,12 +57,9 @@
 
 - [DeepSeek-R1 的 Releases（实际权重归档）](https://github.com/mkusidodohsvebdks888/DeepSeek-R1/releases)：包含 DeepSeek-R1-Distill-Qwen-1.5B 的分片、配置文件和 SHA256 校验文件。
 
-## 🆕 计划加入但尚未 Fork 的项目（不计入上面 14 个）
-
-- [deepseek-ai/deepseek-harness（AI执行器）](https://github.com/deepseek-ai/deepseek-harness) — DeepSeek 官方开源智能体执行框架。若需要加入账号，先在原仓库创建独立 Fork。
-
 ## 说明
 
 - 目录中的括号中文是**导航显示名**，并非实际 GitHub 仓库重命名；原有仓库名称和 URL 不变。
+- 🕗 表示**仅收录外部官方项目**，不算个人仓库的 Fork；在 GitHub 上点击 Fork 后才能拥有自己的独立副本。
 - GitHub 个人仓库列表不会自动显示这里的分组。要在仓库仪表板内直接按组筛选，还可以进一步设置 Topics 和 Saved Views。
 - 本导航是普通 Markdown 文件，可直接在 GitHub 浏览器打开，无需下载源码。
