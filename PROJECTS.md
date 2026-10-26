@@ -1,8 +1,8 @@
 # 📂 我的 GitHub 项目分类导航
 
-> 这里是我的 GitHub 仓库分类目录。**每个项目仍是独立仓库**，这里仅提供中文名称和跳转链接；不会合并源码、修改模型或同步上游。
+> 这里是我的 GitHub 项目分类导航。既包含独立仓库，也包含部分仓库内的独立子项目；这些分类仅用于导航，不会改变原仓库结构或同步上游。
 
-**当前账号共 15 个独立仓库；4 个大分类（AI模型 10、AI执行器 2、执行器技术研究 1、自研模型 2）。**
+**当前账号有 18 个仓库。本页分类展示其中 15 个独立仓库，以及 1 个新增的 Android 应用子项目（共 5 个分类）。**
 
 🔒 表示私有仓库，只有获得授权的 GitHub 用户才能查看。点击下方的分类即可展开或折叠。
 
@@ -53,6 +53,15 @@
 
 </details>
 
+<details open>
+<summary><b>📱 手机端安卓 APP（1 个子项目）</b></summary>
+
+| 项目（中文分类） | 用途说明 |
+|---|---|
+| [AI-Video（AI生成视频·安卓APP）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/AndroidApps/AI-Video) 🔒 | Android 原生 Kotlin + Compose 客户端，包含提示词提交、生成任务状态、视频结果打开；**真实视频生成需另接后端服务**。代码独立存放于 Experiments 仓库的 `AndroidApps/AI-Video/`，不是单独的新仓库。 |
+
+</details>
+
 ## 📦 已保存的模型权重
 
 - [DeepSeek-R1 的 Releases（实际权重归档）](https://github.com/mkusidodohsvebdks888/DeepSeek-R1/releases)：包含 DeepSeek-R1-Distill-Qwen-1.5B 的分片、配置文件和 SHA256 校验文件。
@@ -60,5 +69,6 @@
 ## 说明
 
 - 目录中的括号中文是**导航显示名**，并非实际 GitHub 仓库重命名；原有仓库名称和 URL 不变。
+- 安卓 APP 是仓库内部的独立子项目，不增加 GitHub 独立仓库数量；本页尚未收录 `Experiments`、`core`、`Strip-Bot-Releases` 这 3 个仓库为单独导航条目。
 - GitHub 个人仓库列表不会自动显示这里的分组。要在仓库仪表板内直接按组筛选，还可以进一步设置 Topics 和 Saved Views。
 - 本导航是普通 Markdown 文件，可直接在 GitHub 浏览器打开，无需下载源码。
