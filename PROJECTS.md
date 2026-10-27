@@ -2,7 +2,7 @@
 
 > 这里是我的 GitHub 项目分类导航。既包含独立仓库，也包含部分仓库内的独立子项目；这些分类仅用于导航，不会改变原仓库结构或同步上游。
 
-**当前账号有 18 个仓库。本页分类展示其中 15 个独立仓库，以及 1 个新增的 Android 应用子项目（共 6 个分类）。**
+**当前账号有 18 个仓库。本页分类展示其中 15 个独立仓库，以及 Android 与多智能体的仓库内独立子项目（共 7 个分类）。**
 
 🔒 表示私有仓库，只有获得授权的 GitHub 用户才能查看。点击下方的分类即可展开或折叠。
 
@@ -54,6 +54,16 @@
 </details>
 
 <details open>
+<summary><b>🤖 多智能体 / AI 团队（1 个源码子项目）</b></summary>
+
+| 项目（中文分类） | 用途说明 |
+|---|---|
+| [OpenGrokBot（多智能体·独立电脑）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/MultiAgent/OpenGrokBot) 🔒 | MIT 开源多智能体平台，支持 Docker 隔离电脑、团队聊天室、任务交接与审批。**完整源码（154 个上游文件）已独立复制到私有 Experiments 仓库**，不是子模块；上游：[wolfqing/OpenGrokBot](https://github.com/wolfqing/OpenGrokBot)，固定提交 `e26183cf`；未部署。 |
+| [多智能体分类导航](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/MultiAgent) 🔒 | 多个 AI Bot 独立项目的统一入口，可继续扩充。 |
+
+</details>
+
+<details open>
 <summary><b>📱 手机端安卓 APP（1 个子项目）</b></summary>
 
 | 项目（中文分类） | 用途说明 |
@@ -80,6 +90,6 @@
 ## 说明
 
 - 目录中的括号中文是**导航显示名**，并非实际 GitHub 仓库重命名；原有仓库名称和 URL 不变。
-- 安卓 APP 是仓库内部的独立子项目，不增加 GitHub 独立仓库数量；本页尚未收录 `Experiments`、`core`、`Strip-Bot-Releases` 这 3 个仓库为单独导航条目。
+- 安卓 APP 与多智能体源码均是仓库内部的独立子项目，不增加 GitHub 独立仓库数量；本页尚未收录 `Experiments`、`core`、`Strip-Bot-Releases` 这 3 个仓库为单独导航条目。
 - GitHub 个人仓库列表不会自动显示这里的分组。要在仓库仪表板内直接按组筛选，还可以进一步设置 Topics 和 Saved Views。
 - 本导航是普通 Markdown 文件，可直接在 GitHub 浏览器打开，无需下载源码。
