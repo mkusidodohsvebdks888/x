@@ -1,7 +1,8 @@
 # SRT-M15 实验项目
 
-> 📂 **[查看我的 GitHub 项目中文分类目录](PROJECTS.md)**：AI模型 / AI执行器 / 执行器技术研究 / 自研模型 / 手机端安卓 APP / 资源资料。
+> 📂 **[查看我的 GitHub 项目中文分类目录](PROJECTS.md)**：AI模型 / AI执行器 / 执行器技术研究 / 自研模型 / 多智能体 / 手机端安卓 APP / 资源资料。
 >
+> 🤖 **[多智能体 → OpenGrokBot 源码副本](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/MultiAgent/OpenGrokBot)**：已复制并固定上游 MIT 开源代码，存放在私有 Experiments 仓库。
 > 📚 **[资源 → 资料 → 服务器（免费资源）](资源/资料/服务器/)**：免费云服务器、Web/API 托管、免费 GPU 计算和学生资助入口。
 
 本仓库包含 **SRT-M15**：从随机权重开始训练的小型 Transformer 研究原型，含多分支协作、简单算术任务、字符级文本生成、问答训练、可选的 DeepSeek 网页/API 桥接，以及新增的**本地 HTTP API 服务**。
