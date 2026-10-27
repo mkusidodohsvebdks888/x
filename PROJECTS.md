@@ -64,11 +64,13 @@
 </details>
 
 <details open>
-<summary><b>📱 手机端安卓 APP（1 个子项目）</b></summary>
+<summary><b>📱 手机端安卓 APP（3 个独立子项目）</b></summary>
 
 | 项目（中文分类） | 用途说明 |
 |---|---|
 | [AI-Video（AI生成视频·安卓APP）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/AndroidApps/AI-Video) 🔒 | Android 原生 Kotlin + Compose 客户端，包含提示词提交、生成任务状态、视频结果打开；**真实视频生成需另接后端服务**。代码独立存放于 Experiments 仓库的 `AndroidApps/AI-Video/`，不是单独的新仓库。 |
+| [StripBot（安卓 AI 助手）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/AndroidApps/StripBot) 🔒 | 独立 Android Studio/Gradle 客户端，与 Windows 桌面版本分离；移动端 API 适配层待开发。 |
+| [SRT-OS（AI 原生系统执行器·独立项目）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/AndroidApps/SRT-OS) 🔒 | **完全独立于 StripBot 与 AI-Video** 的 Kotlin 安卓源码原型，先研究闲鱼熄屏通知事件；尚未编译或实机验证，不是可刷机 ROM。 |
 
 </details>
 
