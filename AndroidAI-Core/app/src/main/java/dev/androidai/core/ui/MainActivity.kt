@@ -90,7 +90,7 @@ class MainActivity : Activity() {
     private fun render() {
         val shell = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(background)
+            setBackgroundColor(this@MainActivity.background)
         }
         val heading = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
