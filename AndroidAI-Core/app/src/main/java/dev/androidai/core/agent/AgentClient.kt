@@ -17,7 +17,7 @@ class AgentClient(private val registry: ToolRegistry) {
     suspend fun ask(apiKey: String, model: String, history: List<ChatTurn>, report: suspend (String, Boolean, String) -> Unit): String {
         require(apiKey.isNotBlank()) { "请先在设置中填写 DeepSeek API Key" }
         val messages = JSONArray().put(JSONObject().put("role", "system").put("content",
-            "你是 Android 手机本地自动化助手。仅可调用已注册工具。只能读取设备信息、列出授权目录或按用户请求打开APP。" +
+            "你是 Android 手机本地自动化助手。仅可调用已注册工具。可以检测Termux连接、读取设备信息、Termux环境和工具状态、磁盘空间、列出授权目录或按用户请求打开APP。" +
                 "绝不编造执行结果，不运行任意 Shell 命令，不进行安装、删除、付款或发送消息。" +
                 "操作失败时说明原因。请用简体中文回答。"))
         history.takeLast(12).forEach { turn ->

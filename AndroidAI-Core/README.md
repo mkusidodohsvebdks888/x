@@ -1,12 +1,16 @@
-# AndroidAI-Core — 安卓 AI 双执行器最小版
+# AndroidAI-Core — 安卓 AI 双执行器 Redmi 13C 适配版
 
 独立 Android 工程。仅包含 **AI 对话、执行记录、设置** 三个界面。参考 [AndroidAssistant (Linodx)](https://github.com/xnylh502/AndroidAssistant) 的 Agent/Termux RUN_COMMAND 架构，不包含其 APK 逆向、Root、Frida、文件工作台、编辑器等扩展功能。
 
 ## 当前能力
 
 - DeepSeek 官方 OpenAI 兼容 `chat/completions` API，结构化工具调用，最多 6 轮，默认 `deepseek-chat`（可编辑）。
-- `cli_device_info`：使用 Termux 的真实 Shell 查询手机型号、Android 版本。
-- `cli_list_files`：只允许查看 Termux `home` 或 `tmp`，拒绝任意路径或任意 Shell 字符串。
+- `cli_connection_test`：验证 Termux 桥接与真实命令回调。
+- `cli_device_info`：使用 Termux 查询手机型号、Android 版本。
+- `cli_environment`：查询 Android、Termux 环境、CPU 架构、MIUI/HyperOS 属性。
+- `cli_tools`：只读检查 Git、Python、Node、Curl 和 jq 是否可用。
+- `cli_disk_space`：查询 Termux 数据目录磁盘空间。
+- `cli_list_files`：只允许查看 Termux `home`、`tmp` 或已通过 `termux-setup-storage` 授权的下载目录，拒绝任意路径或任意 Shell 字符串。
 - `android_get_status`：Android 系统版本、Termux 安装及权限状态。
 - `android_open_app`：通过公开 Android Intent 启动可见 APP；系统设置可通过 `com.android.settings` 打开。
 - 简洁本地 UI：对话、日志、设置。日志最多保留最近 100 条，不保留 API 密钥或用户完整提示词。
@@ -27,7 +31,10 @@
    ```
 
    再回到 APP 设置页授予 `RUN_COMMAND` 权限。
-5. 在对话输入「查看 Android 状态」「用 Termux 查询设备型号」或「打开系统设置」。
+5. 设置页面可直接复制 Termux 授权配置脚本，并在 Termux 粘贴执行；也可以点击“测试 Termux 连接”和“检查 Termux 环境”。失败会显示提示，成功或失败都记录在“执行记录”。
+6. 如果要让 Termux 访问下载目录，请在 Termux 自行运行 `termux-setup-storage`，按系统提示授权。APP 不会主动索取所有文件权限。
+7. 红米 13C 的 MIUI/HyperOS 系统可能限制后台服务。遇到连接超时，先打开 Termux，再到系统应用设置按需检查 Termux 和 Android AI Core 的后台省电策略。**不保证锁屏后台执行，也不要求 Root**。
+8. 在对话输入「查看 Android 状态」「用 Termux 查询设备型号」或「打开系统设置」。
 
 注意：普通 APK 无法获得 `adb shell` 全部权限。Termux 工具执行能力受 Android 后台服务、文件沙盒和授权限制。若未安装/授权 Termux，Android 原生工具仍可用。
 
@@ -61,3 +68,13 @@ app/src/main/java/dev/androidai/core/
 ## 开源说明
 
 参考项目 [AndroidAssistant (Linodx)](https://github.com/xnylh502/AndroidAssistant)，原仓库使用 MIT License，版权声明 `Copyright (c) 2026 linbo`。本项目保留许可证及来源说明；与原作者项目独立，不会随上游删除或变更自动改变。
+
+
+## Redmi 13C / Termux 诊断功能
+
+本版本增加了连接测试按钮、Termux 版本检测、MIUI/HyperOS 系统属性诊断、已安装 CLI 工具检测、Termux 空间查询、下载目录只读浏览及可复制的配置命令。
+
+Termux 必须从官方 GitHub 或 F-Droid 来源安装。不要混用不同签名的 Termux 与其扩展包。
+设置页面的“复制基本工具安装命令”只复制 `pkg update && pkg install -y git python curl`，**不会自动执行**。
+
+升级测试 APK 时注意：GitHub Actions 每次构建的调试签名可能不同。若系统提示签名不一致，先备份密钥，再卸载旧版安装新版。

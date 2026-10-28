@@ -1,6 +1,12 @@
 package dev.androidai.core.ui
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
@@ -21,6 +27,8 @@ import dev.androidai.core.agent.ChatTurn
 import dev.androidai.core.storage.ExecutionLogStore
 import dev.androidai.core.storage.SecureSettings
 import dev.androidai.core.termux.TermuxBridge
+import dev.androidai.core.termux.TermuxCommand
+import dev.androidai.core.termux.TermuxSetup
 import dev.androidai.core.tools.ToolRegistry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -273,16 +281,61 @@ class MainActivity : Activity() {
         form.addView(label("Termux 执行器", 18f, true).apply { setPadding(0, dp(28), 0, dp(8)) })
         form.addView(label("安装：${if (TermuxBridge.installed(this)) "已安装" else "未安装"}", 14f))
         form.addView(label("RUN_COMMAND 权限：${if (TermuxBridge.permissionGranted(this)) "已授权" else "未授权"}", 14f))
-        form.addView(label("还需在 Termux 的 ~/.termux/termux.properties 中设置 allow-external-apps=true，随后重新加载配置。", 12f,
+        form.addView(label("Termux 版本：${TermuxBridge.versionName(this) ?: "尚未安装"}", 13f, color = muted))
+        form.addView(label("Redmi 13C 适配：普通权限运行，不需要 Root。手机可能运行 MIUI 或 HyperOS，请按实际系统设置检查后台限制。", 12f,
             color = muted).apply { setPadding(0, dp(10), 0, dp(8)) })
+        form.addView(label("请先在 Termux 手动设置 allow-external-apps=true，随后重新加载配置，再授予 RUN_COMMAND。", 12f,
+            color = muted).apply { setPadding(0, dp(8), 0, dp(8)) })
+        form.addView(button("复制 Termux 授权配置命令", {
+            copyToClipboard("Termux 配置", TermuxSetup.enableExternalApps)
+        }, primary = false), LinearLayout.LayoutParams(-1, dp(50)).apply { bottomMargin = dp(8) })
+        form.addView(button("复制基本工具安装命令（可选）", {
+            copyToClipboard("Termux 基本工具", TermuxSetup.installBasicTools)
+        }, primary = false), LinearLayout.LayoutParams(-1, dp(50)).apply { bottomMargin = dp(8) })
         form.addView(button("请求 Termux 执行权限", {
             if (!TermuxBridge.installed(this)) Toast.makeText(this, "请先安装 Termux", Toast.LENGTH_LONG).show()
             else requestPermissions(arrayOf("com.termux.permission.RUN_COMMAND"), 701)
         }, primary = false), LinearLayout.LayoutParams(-1, dp(52)))
+        form.addView(button("测试 Termux 连接", {
+            runTermuxCheck()
+        }), LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(10) })
+        form.addView(button("检查 Termux 环境", {
+            runTermuxCheck(TermuxCommand.ENVIRONMENT)
+        }, primary = false), LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(8) })
+        form.addView(button("打开本应用系统设置", {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", packageName, null)))
+        }, primary = false), LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(8) })
+        form.addView(label("如遇到锁屏或切换应用后执行失败，请在小米手机的应用信息中按需检查 Termux 与 Android AI Core 的省电策略、后台运行和权限。系统可能主动限制服务，无法保证锁屏执行。", 12f,
+            color = muted).apply { setPadding(0, dp(10), 0, dp(8)) })
         form.addView(label("默认仅支持预先登记的只读 CLI 命令与 APP 启动。没有 Root、任意 Shell 或自动支付功能。", 12f,
             color = muted).apply { setPadding(0, dp(18), 0, dp(8)) })
         scroll.addView(form)
         content.addView(scroll)
+    }
+
+    private fun copyToClipboard(title: String, value: String) {
+        val manager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        manager.setPrimaryClip(ClipData.newPlainText(title, value))
+        Toast.makeText(this, "已复制，请在 Termux 中粘贴并执行", Toast.LENGTH_LONG).show()
+    }
+
+    private fun runTermuxCheck(command: TermuxCommand = TermuxCommand.PING) {
+        uiScope.launch {
+            try {
+                val output = withContext(Dispatchers.IO) {
+                    TermuxBridge.run(this@MainActivity, command)
+                }
+                logs.add("termux." + command.name.lowercase(), "success", output)
+                Toast.makeText(this@MainActivity, "连接成功，已写入执行记录", Toast.LENGTH_LONG).show()
+                page = 1
+                render()
+            } catch (e: Exception) {
+                val info = e.message ?: "未知错误"
+                logs.add("termux." + command.name.lowercase(), "error", info)
+                Toast.makeText(this@MainActivity, info.take(160), Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
