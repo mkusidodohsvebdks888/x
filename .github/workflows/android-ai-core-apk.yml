@@ -1,0 +1,51 @@
+name: AndroidAI-Core APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'AndroidAI-Core/**'
+      - '.github/workflows/android-ai-core-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 35
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Build APK
+        working-directory: AndroidAI-Core
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AndroidAI-Core-v0.1-debug
+          path: AndroidAI-Core/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Publish directly installable APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag='android-ai-core-v0.1.0'
+          apk='AndroidAI-Core/app/build/outputs/apk/debug/app-debug.apk'
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$apk#AndroidAI-Core-v0.1.apk" --clobber
+          else
+            gh release create "$tag" "$apk#AndroidAI-Core-v0.1.apk" \
+              --title 'AndroidAI-Core v0.1.0 (Android Debug APK)' \
+              --notes '独立安卓双执行器最小测试版。通过设置输入自己的 DeepSeek API Key；CLI 需要另行安装和授权 Termux。此 APK 为调试签名测试包。'
+          fi
