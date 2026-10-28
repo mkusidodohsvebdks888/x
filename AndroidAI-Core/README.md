@@ -1,4 +1,4 @@
-# AndroidAI-Core — 安卓 AI 双执行器 Redmi 13C 适配版
+# AndroidAI-Core — 安卓 AI 双执行器 Redmi 13C 外卖辅助版
 
 独立 Android 工程。仅包含 **AI 对话、执行记录、设置** 三个界面。参考 [AndroidAssistant (Linodx)](https://github.com/xnylh502/AndroidAssistant) 的 Agent/Termux RUN_COMMAND 架构，不包含其 APK 逆向、Root、Frida、文件工作台、编辑器等扩展功能。
 
@@ -15,11 +15,11 @@
 - `android_open_app`：通过公开 Android Intent 启动可见 APP；系统设置可通过 `com.android.settings` 打开。
 - 简洁本地 UI：对话、日志、设置。日志最多保留最近 100 条，不保留 API 密钥或用户完整提示词。
 - DeepSeek API Key 用 Android Keystore AES/GCM 加密保存在设备；工程和 APK 不内置 API Key。
-- 无 Root、无无障碍服务、无通知监听、无自动支付或自动发货、无任意命令执行。
+- 无 Root、无通知监听、无自动支付或自动发货、无任意命令执行；无障碍服务仅用于用户主动开启的外卖辅助会话。
 
 ## 手机安装
 
-1. 下载 GitHub Actions 构建产出的 APK 或从 [GitHub Releases](https://github.com/mkusidodohsvebdks888/x/releases) 下载 `AndroidAI-Core-v0.1.apk`。**只有构建任务成功发布后才有下载文件**。
+1. 下载 GitHub Actions 构建产出的 APK 或从 [GitHub Releases](https://github.com/mkusidodohsvebdks888/x/releases) 下载 `AndroidAI-Core-v0.3.apk`。**只有构建任务成功发布后才有下载文件**。
 2. Android 8.0+ 手机上允许该来源安装 APK，点击安装。
 3. 打开 APP → 设置 → 输入自己的 DeepSeek API Key → 保存。
 4. 如需 CLI，安装 GitHub/F-Droid 版本 Termux（建议用相同来源安装 Termux 相关插件）。在 Termux 中执行：
@@ -78,3 +78,25 @@ Termux 必须从官方 GitHub 或 F-Droid 来源安装。不要混用不同签�
 设置页面的“复制基本工具安装命令”只复制 `pkg update && pkg install -y git python curl`，**不会自动执行**。
 
 升级测试 APK 时注意：GitHub Actions 每次构建的调试签名可能不同。若系统提示签名不一致，先备份密钥，再卸载旧版安装新版。
+
+## v0.3.0 外卖 APP 操作（前台单次辅助）
+
+- 设置页新增外卖 APP 选择入口（美团 / 美团外卖 / 饿了么 / 淘宝闪购 / 京东外卖，实际安装包名可能因版本而异）。
+- 点击外卖 APP 名称启动**临时授权会话**，20 分钟后自动失效；重启 APP 也会取消。可随时在设置页手动结束。
+- 必须由用户在系统设置里手动授权 `Android AI Core` 无障碍服务；授权后该服务在用户发起工具请求之前不会进行任何点击操作。
+- DeepSeek 仅在会话有效时获得 `android_ui_scan`、`android_ui_click_text`、`android_ui_search_text`、`android_ui_scroll` 工具。界面读取限用户选定的外卖 APP。
+- 每次点击前检查当前前台包名与敏感确认按钮。**订单提交、确认支付、付款、资金操作不自动执行**，遇到相关界面时终止会话，交给用户本人。
+- 不支持无障碍树无法访问的特殊绘制页面，无法保证任何版本外卖 APP 都能完成选餐。仅供用户主动操作时辅助，不保证锁屏后台运行。
+- 红米 13C 侧载 APK 的无障碍服务可能被 Android 系统标注为“受限制的设置”，请自行确认来源是否可信、按系统授权提示操作，不使用绕过方式。
+
+### 手机端操作示例
+
+1. 在“设置”中配置 DeepSeek API Key。
+2. 安装好外卖 APP，在 Android 系统无障碍设置中允许 Android AI Core。
+3. 回到 Android AI Core 设置页，选择已安装的外卖 APP，开启本次辅助授权。
+4. 回到 Android AI Core AI 对话页输入：“在美团帮我找一份鸡肉饭，选择合适的餐品并准备到确认订单前。”
+5. DeepSeek 会尝试打开被选定的外卖 APP 并读取可访问控件。若 APP 只支持图片按钮或需要手动验证，可能需要你自行完成。
+6. 到订单提交／支付页面由你本人检查真实商家、商品、配送地址和合计费用，再手动提交与付款。
+
+**API Key 和配送地址都不应该写入 GitHub。不要把短信验证码、支付密码交给 AI。**
+

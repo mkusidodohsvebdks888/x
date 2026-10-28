@@ -6,6 +6,8 @@ import android.os.Build
 import android.provider.Settings
 import dev.androidai.core.termux.TermuxBridge
 import dev.androidai.core.termux.TermuxCommand
+import dev.androidai.core.food.FoodSession
+import dev.androidai.core.food.FoodUiBridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -26,6 +28,23 @@ class ToolRegistry(private val activity: Activity) {
             .put("required", JSONArray(listOf("directory")))
             .put("additionalProperties", false)))
         put(def("android_get_status", "Check Android SDK version and whether Termux is installed and authorized"))
+        put(def("android_food_status", "Read current opt-in takeout assistant status and accessibility availability"))
+        if (FoodSession.current() != null) {
+            put(def("android_ui_scan", "Read the accessible screen of the authorized takeout app. Stop before order submission."))
+            put(def("android_ui_click_text", "Click a visible item by its EXACT accessible label. Never submit an order or pay.", JSONObject()
+                .put("type", "object")
+                .put("properties", JSONObject()
+                    .put("text", JSONObject().put("type", "string"))
+                    .put("occurrence", JSONObject().put("type", "integer").put("minimum", 0).put("maximum", 20)))
+                .put("required", JSONArray(listOf("text")))
+                .put("additionalProperties", false)))
+            put(def("android_ui_search_text", "Fill the focused takeout-app search box (not passwords, addresses or payment forms)", JSONObject()
+                .put("type", "object")
+                .put("properties", JSONObject().put("text", JSONObject().put("type", "string")))
+                .put("required", JSONArray(listOf("text")))
+                .put("additionalProperties", false)))
+            put(def("android_ui_scroll", "Scroll forward on the authorized takeout app screen"))
+        }
         put(def("android_open_app", "Open an installed Android app by package name", JSONObject()
             .put("type", "object")
             .put("properties", JSONObject().put("package_name", JSONObject().put("type", "string")
@@ -59,6 +78,26 @@ class ToolRegistry(private val activity: Activity) {
             }
             TermuxBridge.run(activity, command)
         }
+        "android_food_status" -> JSONObject()
+            .put("food_app", FoodSession.current() ?: "inactive")
+            .put("accessibility_enabled", FoodUiBridge.available())
+            .put("payment_automation", false).toString()
+        "android_ui_scan" -> withContext(Dispatchers.Main) { FoodUiBridge.scan() }
+        "android_ui_click_text" -> withContext(Dispatchers.Main) {
+            val result = FoodUiBridge.click(args.optString("text"), args.optInt("occurrence", 0))
+            kotlinx.coroutines.delay(650)
+            result
+        }
+        "android_ui_search_text" -> withContext(Dispatchers.Main) {
+            val result = FoodUiBridge.inputSearch(args.optString("text"))
+            kotlinx.coroutines.delay(500)
+            result
+        }
+        "android_ui_scroll" -> withContext(Dispatchers.Main) {
+            val result = FoodUiBridge.scroll()
+            kotlinx.coroutines.delay(400)
+            result
+        }
         "android_get_status" -> JSONObject()
             .put("android_sdk", Build.VERSION.SDK_INT)
             .put("android_release", Build.VERSION.RELEASE)
@@ -70,6 +109,10 @@ class ToolRegistry(private val activity: Activity) {
             .toString()
         "android_open_app" -> withContext(Dispatchers.Main) {
             val packageName = args.optString("package_name")
+            val selected = FoodSession.current()
+            if (selected != null) require(packageName == selected) {
+                "外卖辅助会话仅允许打开已选 APP：" + selected
+            }
             require(packageName.matches(Regex("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+"))) {
                 "需要合法的 Android package_name"
             }
@@ -80,6 +123,7 @@ class ToolRegistry(private val activity: Activity) {
                     ?: error("找不到可启动的 APP：" + packageName)
             }
             activity.startActivity(intent)
+            kotlinx.coroutines.delay(900)
             "已请求打开 " + packageName + "（请在手机界面检查操作结果）"
         }
         else -> error("未注册的工具：" + name)

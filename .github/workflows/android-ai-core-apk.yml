@@ -28,19 +28,19 @@ jobs:
         run: gradle :app:assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: AndroidAI-Core-v0.2-debug
+          name: AndroidAI-Core-v0.3-debug
           path: AndroidAI-Core/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish directly installable APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='android-ai-core-v0.2.0'
+          tag='android-ai-core-v0.3.0'
           apk='AndroidAI-Core/app/build/outputs/apk/debug/app-debug.apk'
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$apk#AndroidAI-Core-v0.2.apk" --clobber
+            gh release upload "$tag" "$apk#AndroidAI-Core-v0.3.apk" --clobber
           else
-            gh release create "$tag" "$apk#AndroidAI-Core-v0.2.apk" \
-              --title 'AndroidAI-Core v0.2.0 (Android Debug APK)' \
-              --notes '独立安卓双执行器最小测试版。通过设置输入自己的 DeepSeek API Key；CLI 需要另行安装和授权 Termux。此 APK 为调试签名测试包。'
+            gh release create "$tag" "$apk#AndroidAI-Core-v0.3.apk" \
+              --title 'AndroidAI-Core v0.3.0 (Android Debug APK)' \
+              --notes '新增外卖辅助会话和可访问界面操作（不含订单提交及支付）。通过设置输入自己的 DeepSeek API Key；CLI 需要另行安装和授权 Termux。此 APK 为调试签名测试包。'
           fi

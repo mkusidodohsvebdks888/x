@@ -24,6 +24,8 @@ import android.widget.TextView
 import android.widget.Toast
 import dev.androidai.core.agent.AgentClient
 import dev.androidai.core.agent.ChatTurn
+import dev.androidai.core.food.FoodSession
+import dev.androidai.core.food.FoodUiBridge
 import dev.androidai.core.storage.ExecutionLogStore
 import dev.androidai.core.storage.SecureSettings
 import dev.androidai.core.termux.TermuxBridge
@@ -141,7 +143,7 @@ class MainActivity : Activity() {
         val scroll = ScrollView(this)
         val feed = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         if (messages.isEmpty()) {
-            feed.addView(label("你可以让 DeepSeek 查询设备信息、调用 Termux CLI，或打开手机 APP。", 16f, color = muted).apply {
+            feed.addView(label("你可以让 DeepSeek 查询设备信息、调用 Termux CLI，或在设置中开启外卖辅助后操作已选的外卖 APP。", 16f, color = muted).apply {
                 setPadding(dp(12), dp(42), dp(12), dp(18))
             })
         }
@@ -278,6 +280,34 @@ class MainActivity : Activity() {
             }
         }), LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(12) })
 
+        form.addView(label("外卖 APP 操作（一次性授权）", 18f, true).apply { setPadding(0, dp(24), 0, dp(8)) })
+        form.addView(label("目前只在前台操作你选定的外卖 APP，20 分钟后自动失效。可以搜索、浏览、选择商品；结算、提交订单、支付由你本人操作。", 12f, color = muted))
+        form.addView(label("无障碍：${if (FoodUiBridge.available()) "已连接" else "未开启"}", 13f)
+            .apply { setPadding(0, dp(8), 0, dp(6)) })
+        form.addView(button("打开无障碍设置（手动授权）", {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }, primary = false), LinearLayout.LayoutParams(-1, dp(50)).apply { bottomMargin = dp(8) })
+        form.addView(label("会话：${FoodSession.current()?.let { "已授权 " + it } ?: "未启动"}", 13f)
+            .apply { setPadding(0, dp(8), 0, dp(6)) })
+        FoodSession.supported.forEach { app ->
+            form.addView(button("开启本次外卖辅助：${app.title}", {
+                try {
+                    FoodSession.start(this, app.packageName)
+                    logs.add("food_session", "success", "已选 ${app.title}；20 分钟后失效。提交订单与支付需要用户手动操作。")
+                    val launch = packageManager.getLaunchIntentForPackage(app.packageName)
+                        ?: error("找不到外卖 APP")
+                    startActivity(launch)
+                    Toast.makeText(this, "已授权。请返回 Android AI Core 发送自然语言任务。", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, e.message ?: "启动失败", Toast.LENGTH_LONG).show()
+                }
+            }, primary = false), LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(6) })
+        }
+        form.addView(button("立即结束外卖辅助会话", {
+            FoodSession.stop()
+            logs.add("food_session", "cancelled", "用户主动终止了外卖辅助授权")
+            render()
+        }, primary = false), LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
         form.addView(label("Termux 执行器", 18f, true).apply { setPadding(0, dp(28), 0, dp(8)) })
         form.addView(label("安装：${if (TermuxBridge.installed(this)) "已安装" else "未安装"}", 14f))
         form.addView(label("RUN_COMMAND 权限：${if (TermuxBridge.permissionGranted(this)) "已授权" else "未授权"}", 14f))

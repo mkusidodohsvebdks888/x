@@ -34,7 +34,11 @@ object TermuxBridge {
         val errorMessage: String,
     )
 
-    fun installed(context: Context): Boolean = versionName(context) != null
+    fun installed(context: Context): Boolean = runCatching {
+        @Suppress("DEPRECATION")
+        context.packageManager.getPackageInfo(PACKAGE, 0)
+        true
+    }.getOrDefault(false)
 
     fun versionName(context: Context): String? = runCatching {
         @Suppress("DEPRECATION")

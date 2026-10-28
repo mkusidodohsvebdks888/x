@@ -1,1 +1,2 @@
-<resources><string name="app_name">Android AI Core</string></resources>
+<resources><string name="app_name">Android AI Core</string>    <string name="food_accessibility_description">本功能仅在用户开启外卖辅助会话后，用于读取已选择的外卖应用页面并执行用户请求的搜索、选择和滚动操作；不会自动提交订单或付款。</string>
+</resources>
