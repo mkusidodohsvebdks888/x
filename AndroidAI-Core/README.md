@@ -4,7 +4,7 @@
 
 ## 当前能力
 
-- DeepSeek 官方 OpenAI 兼容 `chat/completions` API，结构化工具调用，最多 6 轮，默认 `deepseek-chat`（可编辑）。
+- DeepSeek 官方 OpenAI 兼容 `chat/completions` API，结构化工具调用，最多 24 轮，默认 `deepseek-chat`（可编辑）。
 - `cli_connection_test`：验证 Termux 桥接与真实命令回调。
 - `cli_device_info`：使用 Termux 查询手机型号、Android 版本。
 - `cli_environment`：查询 Android、Termux 环境、CPU 架构、MIUI/HyperOS 属性。
@@ -19,7 +19,7 @@
 
 ## 手机安装
 
-1. 下载 GitHub Actions 构建产出的 APK 或从 [GitHub Releases](https://github.com/mkusidodohsvebdks888/x/releases) 下载 `AndroidAI-Core-v0.3.apk`。**只有构建任务成功发布后才有下载文件**。
+1. 下载 GitHub Actions 构建产出的 APK 或从 [GitHub Releases](https://github.com/mkusidodohsvebdks888/x/releases) 下载 `AndroidAI-Core-v0.4.apk`。**只有构建任务成功发布后才有下载文件**。
 2. Android 8.0+ 手机上允许该来源安装 APK，点击安装。
 3. 打开 APP → 设置 → 输入自己的 DeepSeek API Key → 保存。
 4. 如需 CLI，安装 GitHub/F-Droid 版本 Termux（建议用相同来源安装 Termux 相关插件）。在 Termux 中执行：
@@ -100,3 +100,25 @@ Termux 必须从官方 GitHub 或 F-Droid 来源安装。不要混用不同签�
 
 **API Key 和配送地址都不应该写入 GitHub。不要把短信验证码、支付密码交给 AI。**
 
+
+## v0.4.0 — Codex 式多轮执行器（Agent Runtime）
+
+本版将原有简单的最多 16 轮循环替换为独立的 `AgentRuntime`。仍使用你配置的 DeepSeek API Key、同一套 Termux 和 Android 工具以及仅有的三个页面。
+
+- 用户输入一次任务后，AI 自动循环“判断 → 调用工具 → 读取结果 → 继续判断”，工具结果通过 `tool_call_id` 返回模型。
+- **单次任务上限**：最多 24 轮 DeepSeek 请求、64 次工具调用和 10 分钟；实际任务完成即停止，**并非无限调用 API**。
+- **可见进度**：AI 对话页显示当前轮数、工具计数与最近 7 个步骤；执行记录按工具记录成功或失败。
+- **失败控制**：网络错误与 HTTP 429/5xx 有最多 2 次有限重试；同一工具、相同参数连续 3 次获得相同结果时停止以防重复操作；不会把失败伪装为完成。
+- **停止按钮**：取消协程，防止启动后续 API 和工具步骤。Termux 外部已开始运行的命令未必能立即中止。
+- **隐私**：不会持久化完整聊天记录或无障碍页面扫描内容，不记录 API 密钥或搜索词。
+- **安全**：完全复用现有工具权限，仍不能自动付款、提交订单、执行任意 Shell、Root 等。外卖辅助依然需要用户临时授权。
+
+**尚未实现**：逐 token 流式生成、任务队列、后台持久任务、崩溃后自动恢复、插件动态安装。这是 Codex *风格的多轮执行*，不是完整的 Codex 客户端。若手机锁屏/切后台，MIUI/HyperOS 可能中止进程。
+
+### 验证连续执行
+
+1. 手机安装 v0.4 测试 APK（与旧版的 CI 调试签名可能不同）。
+2. 设置 DeepSeek API Key；需要 Termux 命令时先在系统中授权 Termux。
+3. 在 AI 对话输入：“先查询 Android 状态，再检查 Termux 连接和环境，最后汇总结果。”
+4. 观察 “第 N 轮 · 已执行 M 个工具” 的进度、执行记录中的工具状态；任务完成后不应继续调用 API。
+5. 在执行途中点击“停止”测试取消；触发网络异常时应只有限重试。

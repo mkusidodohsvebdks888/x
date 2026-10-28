@@ -24,6 +24,8 @@ import android.widget.TextView
 import android.widget.Toast
 import dev.androidai.core.agent.AgentClient
 import dev.androidai.core.agent.ChatTurn
+import dev.androidai.core.agent.AgentEvent
+import dev.androidai.core.agent.AgentStage
 import dev.androidai.core.food.FoodSession
 import dev.androidai.core.food.FoodUiBridge
 import dev.androidai.core.storage.ExecutionLogStore
@@ -51,6 +53,8 @@ class MainActivity : Activity() {
     private var inputDraft = ""
     private var running = false
     private var activeJob: Job? = null
+    private var agentProgress = "就绪"
+    private val recentSteps = ArrayDeque<String>()
 
     private val dark = Color.rgb(24, 33, 49)
     private val muted = Color.rgb(108, 120, 138)
@@ -158,7 +162,16 @@ class MainActivity : Activity() {
             }
             feed.addView(bubble, params)
         }
-        if (running) feed.addView(label("正在调用 DeepSeek 或执行工具…", 13f, color = muted))
+        if (running) {
+            feed.addView(label("执行中 · " + agentProgress, 13f, true, blue).apply {
+                setPadding(dp(10), dp(8), dp(10), dp(8))
+            })
+            recentSteps.forEach { step ->
+                feed.addView(label(step, 12f, color = muted).apply {
+                    setPadding(dp(12), dp(3), dp(12), dp(3))
+                })
+            }
+        }
         scroll.addView(feed)
         content.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
@@ -176,9 +189,8 @@ class MainActivity : Activity() {
         composer.addView(input, LinearLayout.LayoutParams(0, -2, 1f))
         val action = button(if (running) "停止" else "发送", {
             if (running) {
+                agentProgress = "正在停止…"
                 activeJob?.cancel()
-                logs.add("agent", "cancelled", "已停止等待后续步骤；Termux 中已启动的命令可能继续执行")
-                running = false
                 render()
             } else {
                 inputDraft = input.text.toString()
@@ -190,6 +202,7 @@ class MainActivity : Activity() {
     }
 
     private fun send() {
+        if (running) return
         val input = inputDraft.trim()
         if (input.isBlank()) return
         if (settings.readApiKey().isBlank()) {
@@ -200,28 +213,72 @@ class MainActivity : Activity() {
         }
         messages.add(ChatTurn("user", input))
         inputDraft = ""
+        agentProgress = "已接收任务"
+        recentSteps.clear()
         running = true
         render()
         activeJob = uiScope.launch {
             try {
                 val key = settings.readApiKey()
-                val answer = AgentClient(ToolRegistry(this@MainActivity)).ask(key, settings.model, messages.toList()) { tool, success, output ->
-                    withContext(Dispatchers.Main) {
-                        logs.add(tool, if (success) "success" else "error", output)
-                        if (page == 1) render()
-                    }
+                val answer = AgentClient(ToolRegistry(this@MainActivity)).ask(
+                    key, settings.model, messages.toList()
+                ) { info: AgentEvent ->
+                    withContext(Dispatchers.Main) { showAgentEvent(info) }
                 }
                 messages.add(ChatTurn("assistant", answer))
             } catch (_: CancellationException) {
-                messages.add(ChatTurn("assistant", "已暂停后续操作。正在运行的外部命令不一定已终止。"))
+                logs.add("agent", "cancelled", "用户停止了本次任务；外部命令可能无法立即终止")
+                messages.add(ChatTurn("assistant", "已停止后续 API 与工具调用。Termux 中已启动的命令可能仍在运行。"))
             } catch (error: Exception) {
-                messages.add(ChatTurn("assistant", "执行失败：${error.message ?: "未知错误"}"))
+                val reason = (error.message ?: "未知错误").take(240)
+                logs.add("agent", "error", reason)
+                messages.add(ChatTurn("assistant", "执行失败：" + reason))
             } finally {
                 running = false
                 activeJob = null
+                agentProgress = "就绪"
+                recentSteps.clear()
                 render()
             }
         }
+    }
+
+    private fun showAgentEvent(info: AgentEvent) {
+        val location = "第 " + info.round + " 轮 · 已执行 " + info.toolCount + " 个工具"
+        val summary = when (info.stage) {
+            AgentStage.STARTED -> "准备执行任务"
+            AgentStage.MODEL_CALL -> "DeepSeek 正在判断下一步"
+            AgentStage.MODEL_RETRY -> "网络异常，正在重试"
+            AgentStage.TOOL_START -> "正在调用：" + info.toolName
+            AgentStage.TOOL_RESULT ->
+                (if (info.success == true) "完成：" else "失败：") + info.toolName
+            AgentStage.FINISHED -> "执行已结束"
+            AgentStage.STOPPED -> "达到停止条件"
+        }
+        agentProgress = location + " · " + summary
+        if (info.stage == AgentStage.TOOL_START ||
+            info.stage == AgentStage.TOOL_RESULT ||
+            info.stage == AgentStage.MODEL_RETRY
+        ) {
+            recentSteps.addLast(summary)
+            while (recentSteps.size > 7) recentSteps.removeFirst()
+        }
+        if (info.stage == AgentStage.TOOL_RESULT) {
+            // Log short sanitized result. Do not store whole screens or prompts.
+            val safeDetail = if (info.toolName == "android_ui_scan") {
+                "已读取当前界面（页面文字不写入本地执行日志）"
+            } else if (info.toolName == "android_ui_search_text") {
+                "已执行搜索输入（搜索内容不写入日志）"
+            } else {
+                info.detail.take(280)
+            }
+            logs.add(info.toolName, if (info.success == true) "success" else "error", safeDetail)
+        } else if (info.stage == AgentStage.MODEL_RETRY ||
+            info.stage == AgentStage.STOPPED
+        ) {
+            logs.add("agent", info.stage.name.lowercase(), info.detail.take(250))
+        }
+        if (page == 0 || page == 1) render()
     }
 
     private fun drawLogs(content: LinearLayout) {
