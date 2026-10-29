@@ -28,19 +28,19 @@ jobs:
         run: gradle :app:assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: AndroidAI-Core-v0.4-debug
+          name: AndroidAI-Core-v0.5-debug
           path: AndroidAI-Core/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish directly installable APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='android-ai-core-v0.4.0'
+          tag='android-ai-core-v0.5.0'
           apk='AndroidAI-Core/app/build/outputs/apk/debug/app-debug.apk'
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$apk#AndroidAI-Core-v0.4.apk" --clobber
+            gh release upload "$tag" "$apk#AndroidAI-Core-v0.5.apk" --clobber
           else
-            gh release create "$tag" "$apk#AndroidAI-Core-v0.4.apk" \
-              --title 'AndroidAI-Core v0.4.0 (Android Debug APK)' \
-              --notes '新增 Codex 风格连续工具执行、进度、有限重试与停止控制；外卖提交及支付仍由用户确认。通过设置输入自己的 DeepSeek API Key；CLI 需要另行安装和授权 Termux。此 APK 为调试签名测试包。'
+            gh release create "$tag" "$apk#AndroidAI-Core-v0.5.apk" \
+              --title 'AndroidAI-Core v0.5.0 (Android Debug APK)' \
+              --notes '新增独立 workflow 流程模块、PokeClaw PlaybookManager 移植、操作后核验、恢复与防重复点击；外卖提交及支付仍由用户确认。通过设置输入自己的 DeepSeek API Key；CLI 需要另行安装和授权 Termux。此 APK 为调试签名测试包。'
           fi

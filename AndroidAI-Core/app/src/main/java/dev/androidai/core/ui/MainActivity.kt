@@ -34,12 +34,14 @@ import dev.androidai.core.termux.TermuxBridge
 import dev.androidai.core.termux.TermuxCommand
 import dev.androidai.core.termux.TermuxSetup
 import dev.androidai.core.tools.ToolRegistry
+import dev.androidai.core.workflow.PlaybookManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -55,6 +57,9 @@ class MainActivity : Activity() {
     private var activeJob: Job? = null
     private var agentProgress = "就绪"
     private val recentSteps = ArrayDeque<String>()
+    private var currentAgent: AgentClient? = null
+    private var resumeReady = false
+    private var resumeNote = ""
 
     private val dark = Color.rgb(24, 33, 49)
     private val muted = Color.rgb(108, 120, 138)
@@ -65,6 +70,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         settings = SecureSettings(this)
         logs = ExecutionLogStore(this)
+        PlaybookManager.loadAll(this)
         window.statusBarColor = Color.WHITE
         window.navigationBarColor = Color.WHITE
         @Suppress("DEPRECATION")
@@ -74,6 +80,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         activeJob?.cancel()
+        currentAgent?.abandon()
         uiScope.cancel()
         super.onDestroy()
     }
@@ -176,6 +183,17 @@ class MainActivity : Activity() {
         content.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
 
+        if (resumeReady && !running) {
+            content.addView(label("外卖操作已暂停：" + resumeNote, 12f, color = muted).apply {
+                setPadding(dp(8), dp(6), dp(8), dp(8))
+            })
+            content.addView(button("返回美团并继续（先检查页面）", {
+                resumeInterrupted()
+            }), LinearLayout.LayoutParams(-1, dp(50)).apply {
+                bottomMargin = dp(8)
+            })
+        }
+
         val composer = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; orientation = LinearLayout.HORIZONTAL }
         val input = EditText(this).apply {
             setText(inputDraft)
@@ -211,6 +229,9 @@ class MainActivity : Activity() {
             render()
             return
         }
+        currentAgent?.abandon()
+        resumeReady = false
+        resumeNote = ""
         messages.add(ChatTurn("user", input))
         inputDraft = ""
         agentProgress = "已接收任务"
@@ -220,7 +241,9 @@ class MainActivity : Activity() {
         activeJob = uiScope.launch {
             try {
                 val key = settings.readApiKey()
-                val answer = AgentClient(ToolRegistry(this@MainActivity)).ask(
+                val client = AgentClient(ToolRegistry(this@MainActivity))
+                currentAgent = client
+                val answer = client.ask(
                     key, settings.model, messages.toList()
                 ) { info: AgentEvent ->
                     withContext(Dispatchers.Main) { showAgentEvent(info) }
@@ -243,6 +266,55 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun resumeInterrupted() {
+        if (running) return
+        val client = currentAgent
+        if (client?.canResume() != true) {
+            resumeReady = false
+            Toast.makeText(this, "任务恢复信息已失效，请重新下达任务", Toast.LENGTH_LONG).show()
+            render()
+            return
+        }
+        val target = FoodSession.current()
+        if (target == null) {
+            client.abandon()
+            resumeReady = false
+            Toast.makeText(this, "外卖授权已过期，请在设置页重新授权", Toast.LENGTH_LONG).show()
+            render()
+            return
+        }
+        resumeReady = false
+        running = true
+        agentProgress = "正在返回外卖 APP 并重新检查当前页面"
+        recentSteps.clear()
+        render()
+        activeJob = uiScope.launch {
+            try {
+                val launch = packageManager.getLaunchIntentForPackage(target)
+                    ?: error("无法启动原来的外卖 APP，请确认它仍已安装")
+                startActivity(launch)
+                // The previous action is never replayed; only a read is retried.
+                delay(900L)
+                val answer = client.resume()
+                messages.add(ChatTurn("assistant", answer))
+            } catch (cancel: CancellationException) {
+                logs.add("agent", "cancelled", "用户取消了恢复流程")
+                messages.add(ChatTurn("assistant", "恢复流程已取消。请检查美团页面后重新操作。"))
+            } catch (failure: Exception) {
+                val message = (failure.message ?: "未知中断").take(230)
+                logs.add("agent", "error", "继续任务失败：" + message)
+                messages.add(ChatTurn("assistant", "继续任务失败：" + message))
+            } finally {
+                running = false
+                activeJob = null
+                resumeReady = client.canResume()
+                agentProgress = "就绪"
+                recentSteps.clear()
+                render()
+            }
+        }
+    }
+
     private fun showAgentEvent(info: AgentEvent) {
         val location = "第 " + info.round + " 轮 · 已执行 " + info.toolCount + " 个工具"
         val summary = when (info.stage) {
@@ -252,10 +324,18 @@ class MainActivity : Activity() {
             AgentStage.TOOL_START -> "正在调用：" + info.toolName
             AgentStage.TOOL_RESULT ->
                 (if (info.success == true) "完成：" else "失败：") + info.toolName
+            AgentStage.INTERRUPTED -> "需要你处理美团页面"
             AgentStage.FINISHED -> "执行已结束"
             AgentStage.STOPPED -> "达到停止条件"
         }
         agentProgress = location + " · " + summary
+        if (info.stage == AgentStage.INTERRUPTED) {
+            resumeReady = true
+            resumeNote = info.detail.take(180)
+        } else if (info.stage == AgentStage.FINISHED ||
+            info.stage == AgentStage.STOPPED) {
+            resumeReady = false
+        }
         if (info.stage == AgentStage.TOOL_START ||
             info.stage == AgentStage.TOOL_RESULT ||
             info.stage == AgentStage.MODEL_RETRY
@@ -265,16 +345,15 @@ class MainActivity : Activity() {
         }
         if (info.stage == AgentStage.TOOL_RESULT) {
             // Log short sanitized result. Do not store whole screens or prompts.
-            val safeDetail = if (info.toolName == "android_ui_scan") {
-                "已读取当前界面（页面文字不写入本地执行日志）"
-            } else if (info.toolName == "android_ui_search_text") {
-                "已执行搜索输入（搜索内容不写入日志）"
+            val safeDetail = if (info.toolName.startsWith("android_ui_")) {
+                "已执行界面操作；页面文本、搜索词和购物车内容不写入本地执行日志"
             } else {
                 info.detail.take(280)
             }
             logs.add(info.toolName, if (info.success == true) "success" else "error", safeDetail)
         } else if (info.stage == AgentStage.MODEL_RETRY ||
-            info.stage == AgentStage.STOPPED
+            info.stage == AgentStage.STOPPED ||
+            info.stage == AgentStage.INTERRUPTED
         ) {
             logs.add("agent", info.stage.name.lowercase(), info.detail.take(250))
         }

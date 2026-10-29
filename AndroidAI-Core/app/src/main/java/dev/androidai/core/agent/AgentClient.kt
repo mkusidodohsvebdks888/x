@@ -15,6 +15,20 @@ data class ChatTurn(val role: String, val text: String)
  * Network requests only happen when the runtime needs another decision.
  */
 class AgentClient(private val registry: ToolRegistry) {
+    private var runtime: AgentRuntime? = null
+
+    fun canResume(): Boolean = runtime?.canResume() == true
+
+    fun abandon() {
+        runtime?.abandon()
+        runtime = null
+    }
+
+    suspend fun resume(): String {
+        val saved = runtime ?: error("没有可恢复的任务")
+        return saved.resume()
+    }
+
     suspend fun ask(
         apiKey: String,
         model: String,
@@ -22,11 +36,13 @@ class AgentClient(private val registry: ToolRegistry) {
         report: suspend (AgentEvent) -> Unit
     ): String {
         require(apiKey.isNotBlank()) { "请先在设置中填写 DeepSeek API Key" }
-        return AgentRuntime(
+        val active = AgentRuntime(
             registry = registry,
             request = { messages, tools -> request(apiKey, model, messages, tools) },
             event = report
-        ).run(history)
+        )
+        runtime = active
+        return active.run(history)
     }
 
     private suspend fun request(

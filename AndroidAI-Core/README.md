@@ -19,7 +19,7 @@
 
 ## 手机安装
 
-1. 下载 GitHub Actions 构建产出的 APK 或从 [GitHub Releases](https://github.com/mkusidodohsvebdks888/x/releases) 下载 `AndroidAI-Core-v0.4.apk`。**只有构建任务成功发布后才有下载文件**。
+1. 下载 GitHub Actions 构建产出的 APK 或从 [GitHub Releases](https://github.com/mkusidodohsvebdks888/x/releases) 下载 `AndroidAI-Core-v0.5.apk`。**只有构建任务成功发布后才有下载文件**。
 2. Android 8.0+ 手机上允许该来源安装 APK，点击安装。
 3. 打开 APP → 设置 → 输入自己的 DeepSeek API Key → 保存。
 4. 如需 CLI，安装 GitHub/F-Droid 版本 Termux（建议用相同来源安装 Termux 相关插件）。在 Termux 中执行：
@@ -55,12 +55,16 @@ gradle :app:assembleDebug
 ```text
 app/src/main/java/dev/androidai/core/
   agent/AgentClient.kt              DeepSeek Tool Calls
+  agent/AgentRuntime.kt             多轮 Agent Runtime / 手动恢复
   tools/ToolRegistry.kt             工具清单、权限边界、分发
   termux/TermuxBridge.kt             Termux RUN_COMMAND
   termux/TermuxResultReceiver.kt    异步结果
   storage/SecureSettings.kt         Android Keystore
   storage/ExecutionLogStore.kt      最小执行记录
   ui/MainActivity.kt                三页面 UI
+  workflow/PlaybookManager.kt       PokeClaw 原生流程模板管理组件（Apache-2.0）
+  workflow/WorkflowVerifier.kt      独立操作核验层
+  assets/playbooks/*.md             内置工作流模板
 ```
 
 这里的 MVP **暂未迁移为“Termux 内启动 HTTP API Server”**；我们保留原项目更简单可靠的 RUN_COMMAND 作为基础闭环，后续仅在确认需要时才讨论 API 桥接。不要误认为已实现后台无人值守服务。
@@ -122,3 +126,19 @@ Termux 必须从官方 GitHub 或 F-Droid 来源安装。不要混用不同签�
 3. 在 AI 对话输入：“先查询 Android 状态，再检查 Termux 连接和环境，最后汇总结果。”
 4. 观察 “第 N 轮 · 已执行 M 个工具” 的进度、执行记录中的工具状态；任务完成后不应继续调用 API。
 5. 在执行途中点击“停止”测试取消；触发网络异常时应只有限重试。
+
+## v0.5.0 — 独立完整流程模块（workflow）
+
+**目标**：让用户发出一次请求后，AI 能按流程操作、观察、验证和继续，而不是把某次点击当作整项任务完成。无需增加第四个主页面。
+
+- 在 GitHub 项目中独立创建 `app/src/main/java/dev/androidai/core/workflow/`。
+- **完整移植 PokeClaw 的原生 PlaybookManager 组件**，改名空间并去除其 XLog 依赖，加载只读内置 Markdown 流程；依法保留 Apache-2.0 许可证、原始版权与改动说明，详见 `third_party/pokeclaw-playbook/`。
+- 新增 `WorkflowVerifier`：每次外卖界面点击、搜索输入或滚动后，使用只读页面快照验证页面是否发生变化，不盲目重试改变状态的操作。
+- 新增“蜜雪冰城／美团外卖选餐”和“应用内搜索”流程模板，由 AgentRuntime 自动匹配。流程严格要求先确认饮品与规格、查询真实界面、核验购物车，到提交订单或付款时交还给用户。
+- **人工接管／恢复**：页面短暂加载自动限时重读；验证码、登录、无障碍断开或无法验证加购结果时暂停。返回应用点击“返回美团并继续（先检查页面）”后重新扫描，再由模型决定下一步。
+- 每轮最多执行一次修改界面的工具操作；模型要求的多次点击会分解到后续轮次，避免基于旧页面连续盲点。
+- 单任务仍限制 24 轮 API、64 个工具调用和 10 分钟，不开放任意 Shell、Root、验证码绕过、自动提交订单或付款。
+
+**完整项目选择说明**：PokeClaw 是完整的独立 Android 应用，不能在不重构其应用 ID、模型/权限运行时与服务的情况下直接嵌入另一 APK。本次采用其可独立移植的完整工作流组件，而不是把整个 PokeClaw APK 当作插件嵌入。Mobilerun/Open-AutoGLM 通常需要外部主机或 ADB 运行时，也没有直接嵌入当前手机 APK。
+
+**真实能力边界**：构建成功仅证明工程可编译，不代表已经在红米 13C 的实际美团页面跑完任务。自绘页面、页面文字变化不明显、系统后台策略仍可能中断；未确认的点击会要求人工核对。模块在 APP 进程重启后不能恢复内存检查点。详见 `docs/WORKFLOW_MODULE.md`。

@@ -8,6 +8,7 @@ import dev.androidai.core.termux.TermuxBridge
 import dev.androidai.core.termux.TermuxCommand
 import dev.androidai.core.food.FoodSession
 import dev.androidai.core.food.FoodUiBridge
+import dev.androidai.core.workflow.WorkflowVerifier
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -84,19 +85,19 @@ class ToolRegistry(private val activity: Activity) {
             .put("payment_automation", false).toString()
         "android_ui_scan" -> withContext(Dispatchers.Main) { FoodUiBridge.scan() }
         "android_ui_click_text" -> withContext(Dispatchers.Main) {
-            val result = FoodUiBridge.click(args.optString("text"), args.optInt("occurrence", 0))
-            kotlinx.coroutines.delay(650)
-            result
+            WorkflowVerifier.actAndObserve("android_ui_click_text") {
+                FoodUiBridge.click(args.optString("text"), args.optInt("occurrence", 0))
+            }
         }
         "android_ui_search_text" -> withContext(Dispatchers.Main) {
-            val result = FoodUiBridge.inputSearch(args.optString("text"))
-            kotlinx.coroutines.delay(500)
-            result
+            WorkflowVerifier.actAndObserve("android_ui_search_text") {
+                FoodUiBridge.inputSearch(args.optString("text"))
+            }
         }
         "android_ui_scroll" -> withContext(Dispatchers.Main) {
-            val result = FoodUiBridge.scroll()
-            kotlinx.coroutines.delay(400)
-            result
+            WorkflowVerifier.actAndObserve("android_ui_scroll") {
+                FoodUiBridge.scroll()
+            }
         }
         "android_get_status" -> JSONObject()
             .put("android_sdk", Build.VERSION.SDK_INT)
