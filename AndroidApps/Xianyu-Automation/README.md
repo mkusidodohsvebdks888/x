@@ -6,6 +6,10 @@
 
 用户主动打开闲鱼并浏览页面时，通过 Android AccessibilityService 读取当前可访问窗口中的可见内容，识别并整理买家、会话、聊天消息、商品卡片和消息意图。识别结果保存到手机本地数据库，供用户查看、核对和修正。
 
+## 功能目录
+
+- [完整功能目录](docs/FEATURES.md)：按模块列出功能编号、说明、V1.0 状态、界面页面和后续版本边界。
+
 ## V1.0 允许
 
 - 只监听包名 com.taobao.idlefish 的无障碍事件。
@@ -40,6 +44,7 @@
     ├── AGENTS.md
     ├── .gitignore
     └── docs/
+        ├── FEATURES.md
         ├── ARCHITECTURE.md
         ├── ACCESSIBILITY.md
         ├── READ_ONLY_POLICY.md
@@ -52,6 +57,7 @@
 
 ## 开发文档
 
+- [功能目录](docs/FEATURES.md)
 - [系统架构](docs/ARCHITECTURE.md)
 - [AccessibilityService 设计](docs/ACCESSIBILITY.md)
 - [只读安全边界](docs/READ_ONLY_POLICY.md)
@@ -65,6 +71,7 @@
 | 项目 | 状态 |
 |---|---|
 | 运行方式与 V1.0 范围 | 已确定 |
+| 功能目录 | 已整理 |
 | 只读权限设计 | 已规划，尚未实现 |
 | 页面解析器 | 尚未开发 |
 | Room 数据库 | 尚未开发 |
