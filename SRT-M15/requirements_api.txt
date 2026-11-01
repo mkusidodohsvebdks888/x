@@ -1,5 +1,0 @@
-# Optional authenticated API facade from the existing GitHub project.
-# Base local chat/training only needs requirements.txt.
-fastapi>=0.110,<1
-uvicorn>=0.27,<1
-httpx>=0.27,<1
