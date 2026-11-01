@@ -1,0 +1,26 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.iml
+.idea/
+.kotlin/
+
+# Local runtime data
+*.db
+*.db-shm
+*.db-wal
+*.log
+captures/
+screenshots/
+recordings/
+exports/
+
+# Secrets and signing material
+.env
+.env.*
+*.jks
+*.keystore
+secrets/
+cookies*
+token*

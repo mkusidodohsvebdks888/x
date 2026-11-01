@@ -58,19 +58,20 @@
 
 | 项目（中文分类） | 用途说明 |
 |---|---|
-| [OpenGrokBot（多智能体·独立电脑）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/MultiAgent/OpenGrokBot) 🔒 | MIT 开源多智能体平台，支持 Docker 隔离电脑、团队聊天室、任务交接与审批。**完整源码（154 个上游文件）已独立复制到私有 Experiments 仓库**，不是子模块；上游：[wolfqing/OpenGrokBot](https://github.com/wolfqing/OpenGrokBot)，固定提交 `e26183cf`；未部署。 |
+| [OpenGrokBot（多智能体·独立电脑）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/MultiAgent/OpenGrokBot) 🔒 | MIT 开源多智能体平台，支持 Docker 隔离电脑、团队聊天室、任务交接与审批。完整源码（154 个上游文件）已独立复制到私有 Experiments 仓库，不是子模块；上游：[wolfqing/OpenGrokBot](https://github.com/wolfqing/OpenGrokBot)，固定提交 e26183cf；未部署。 |
 | [多智能体分类导航](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/MultiAgent) 🔒 | 多个 AI Bot 独立项目的统一入口，可继续扩充。 |
 
 </details>
 
 <details open>
-<summary><b>📱 手机端安卓 APP（3 个独立子项目）</b></summary>
+<summary><b>📱 手机端安卓 APP（4 个独立子项目）</b></summary>
 
 | 项目（中文分类） | 用途说明 |
 |---|---|
-| [AI-Video（AI生成视频·安卓APP）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/AndroidApps/AI-Video) 🔒 | Android 原生 Kotlin + Compose 客户端，包含提示词提交、生成任务状态、视频结果打开；**真实视频生成需另接后端服务**。代码独立存放于 Experiments 仓库的 `AndroidApps/AI-Video/`，不是单独的新仓库。 |
+| [Xianyu-Automation（闲鱼只读识别·安卓 APP）](https://github.com/mkusidodohsvebdks888/x/tree/main/AndroidApps/Xianyu-Automation) | Android 原生 Kotlin 项目，规划只读 AccessibilityService，读取用户当前打开的闲鱼聊天和商品卡片，识别买家、会话、商品和消息意图。当前仅提交规划文档，尚无 Gradle 工程、APK 或真机验收。 |
+| [AI-Video（AI生成视频·安卓APP）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/AndroidApps/AI-Video) 🔒 | Android 原生 Kotlin + Compose 客户端，包含提示词提交、生成任务状态、视频结果打开；真实视频生成需另接后端服务。代码独立存放于 Experiments 仓库的 AndroidApps/AI-Video/。 |
 | [StripBot（安卓 AI 助手）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/AndroidApps/StripBot) 🔒 | 独立 Android Studio/Gradle 客户端，与 Windows 桌面版本分离；移动端 API 适配层待开发。 |
-| [SRT-OS（AI 原生系统执行器·独立项目）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/AndroidApps/SRT-OS) 🔒 | **完全独立于 StripBot 与 AI-Video** 的 Kotlin 安卓源码原型，先研究闲鱼熄屏通知事件；尚未编译或实机验证，不是可刷机 ROM。 |
+| [SRT-OS（AI 原生系统执行器·独立项目）](https://github.com/mkusidodohsvebdks888/Experiments/tree/main/AndroidApps/SRT-OS) 🔒 | 完全独立于 StripBot 与 AI-Video 的 Kotlin 安卓源码原型，先研究闲鱼通知事件；尚未编译或实机验证，不是可刷机 ROM。 |
 
 </details>
 
@@ -91,7 +92,8 @@
 
 ## 说明
 
-- 目录中的括号中文是**导航显示名**，并非实际 GitHub 仓库重命名；原有仓库名称和 URL 不变。
-- 安卓 APP 与多智能体源码均是仓库内部的独立子项目，不增加 GitHub 独立仓库数量；本页尚未收录 `Experiments`、`core`、`Strip-Bot-Releases` 这 3 个仓库为单独导航条目。
+- 目录中的括号中文是导航显示名，并非实际 GitHub 仓库重命名；原有仓库名称和 URL 不变。
+- 安卓 APP 与多智能体源码均以仓库内独立子项目管理，不增加 GitHub 独立仓库数量。手机端 APP 目前分布在本人主开发仓库 x 和私有 Experiments 仓库中。
+- Xianyu-Automation 是 x 仓库中的独立子项目目录，不是新建的 GitHub 独立仓库。
 - GitHub 个人仓库列表不会自动显示这里的分组。要在仓库仪表板内直接按组筛选，还可以进一步设置 Topics 和 Saved Views。
 - 本导航是普通 Markdown 文件，可直接在 GitHub 浏览器打开，无需下载源码。
